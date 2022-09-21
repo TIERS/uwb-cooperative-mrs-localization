@@ -22,7 +22,7 @@ from rclpy.clock        import Clock
 from rclpy.duration     import Duration
 from pfilter            import ParticleFilter, squared_error
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from rclpy.qos          import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 
 
 import numpy as np
@@ -38,22 +38,22 @@ def parse_args():
 args = parse_args()
 print(args.fuse_group)
 
-error_uwb_ranges = 'errors/error_uwb.csv'
+error_uwb_ranges = '../errors/error_uwb.csv'
 
-error_file_name = 'errors/error_u.csv'
-images_save_path = 'images/images_u/'
-pos_path = './pos/pos_u.csv'
-pos_ground = './pos/pos_g.csv'
+error_file_name = '../errors/error_u.csv'
+images_save_path = '../images/images_u/'
+pos_path = '../pos/pos_u.csv'
+pos_ground = '../pos/pos_g.csv'
 
 if args.fuse_group == 1:
-    error_file_name = "errors/error_u_v.csv"
-    images_save_path = 'images/images_u_v/'
-    pos_path = './pos/pos_u_v.csv'
+    error_file_name = "../errors/error_u_v.csv"
+    images_save_path = '../images/images_u_v/'
+    pos_path = '../pos/pos_u_v.csv'
 
 if args.fuse_group == 2:
-    error_file_name = "errors/error_uv.csv"
-    images_save_path = 'images/images_uv/'
-    pos_path = './pos/pos_uv.csv'
+    error_file_name = "../errors/error_uv.csv"
+    images_save_path = '../images/images_uv/'
+    pos_path = '../pos/pos_uv.csv'
 
 
 class UWBParticleFilter(Node) :
