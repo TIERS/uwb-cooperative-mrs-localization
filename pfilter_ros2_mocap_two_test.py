@@ -5,9 +5,7 @@ from rclpy.node import Node
 
 import os 
 import sys
-# import json
 import time
-# from copy               import deepcopy
 import math
 import argparse
 import shutil
