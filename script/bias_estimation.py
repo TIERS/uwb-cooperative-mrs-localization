@@ -118,7 +118,7 @@ class BiasEstimation(Node) :
         # np.savetxt('bias_estimation.txt',(orientation_np,bias_np),delimiter=',')
 
 
-        np.savez('bias_estimation.npz',
+        np.savez('data/bias_estimation.npz',
                     orientation_np = orientation_np, 
                     bias_np = bias_np
                     )
