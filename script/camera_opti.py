@@ -74,20 +74,42 @@ class BiasEstimation(Node) :
 
     def update_object_ori_cb(self, pose_array):
         self.object_ori_pose_array = np.array(pose_array.detections)
-        if self.object_ori_pose_array.size != 0 and self.object_end_pose_array.size != 0:
-            cam_range_array = np.array([-self.object_end_pose_array[0].position.x + self.object_ori_pose_array[0].position.x, 
-                                  -self.object_end_pose_array[0].position.y + self.object_ori_pose_array[0].position.y,
-                                  0.0])
-            opti_range_array = np.array([self.optitrack_turtle01_pose.pose.position.x - self.optitrack_turtle03_pose.pose.position.x,
-                                   self.optitrack_turtle01_pose.pose.position.y - self.optitrack_turtle03_pose.pose.position.y,
-                                   0.0])
-            cam_range  = np.linalg.norm(cam_range_array)
-            opti_range = np.linalg.norm(cam_range_array)
-            self.get_logger().info("diff: {}".format(opti_range - cam_range))
+        # if self.object_ori_pose_array.size != 0 and self.object_end_pose_array.size != 0:
+        #     cam_range_array = np.array([-self.object_end_pose_array[0].position.x + self.object_ori_pose_array[0].position.x, 
+        #                           -self.object_end_pose_array[0].position.y + self.object_ori_pose_array[0].position.y,
+        #                           0.0])
+        #     opti_range_array = np.array([self.optitrack_turtle01_pose.pose.position.x - self.optitrack_turtle03_pose.pose.position.x,
+        #                            self.optitrack_turtle01_pose.pose.position.y - self.optitrack_turtle03_pose.pose.position.y,
+        #                            0.0])
+        #     cam_range  = np.linalg.norm(cam_range_array)
+        #     opti_range = np.linalg.norm(cam_range_array)
+        #     self.get_logger().info("diff: {}".format(opti_range - cam_range))
+        
+        if self.object_ori_pose_array.size == 1:
+            obj_dis_arr = np.array([self.object_ori_pose_array[0].position.x, 
+                                self.object_ori_pose_array[0].position.y,
+                                self.object_ori_pose_array[0].position.z])
+            self.get_logger().info("x: {}, y: {}".format(self.object_ori_pose_array[0].position.x, 
+                                self.object_ori_pose_array[0].position.y))
+            opti_dis_arr = np.array([self.optitrack_turtle01_pose.pose.position.x - self.chair_pose.pose.position.x,
+                                   self.optitrack_turtle01_pose.pose.position.y - self.chair_pose.pose.position.y,
+                                   self.optitrack_turtle01_pose.pose.position.z - self.chair_pose.pose.position.z])
+            obj_dis = np.linalg.norm(obj_dis_arr)
+            opti_dis = np.linalg.norm(opti_dis_arr)
+            self.get_logger().info("obj: {}, opti: {}, dis: {}".format(obj_dis, opti_dis, obj_dis - opti_dis))
 
     def update_object_end_cb(self, pose_array):
         self.object_end_pose_array = np.array(pose_array.detections)
-
+        if self.object_end_pose_array.size == 1:
+            obj_dis_arr = np.array([self.object_end_pose_array[0].position.x, 
+                                self.object_end_pose_array[0].position.y,
+                                self.object_end_pose_array[0].position.z])
+            opti_dis_arr = np.array([self.optitrack_turtle03_pose.pose.position.x - self.chair_pose.pose.position.x,
+                                   self.optitrack_turtle03_pose.pose.position.y - self.chair_pose.pose.position.y,
+                                   self.optitrack_turtle03_pose.pose.position.z - self.chair_pose.pose.position.z])
+            obj_dis = np.linalg.norm(obj_dis_arr)
+            opti_dis = np.linalg.norm(opti_dis_arr)
+            # self.get_logger().info("obj: {}, opti: {}, dis: {}".format(obj_dis, opti_dis, obj_dis - opti_dis))
 
 
 def main(args=None):

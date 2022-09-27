@@ -5,28 +5,40 @@ from rclpy.node import Node
 
 import os 
 import sys
-# import json
 import time
-# from copy               import deepcopy
 import math
 import argparse
 import shutil
 
-from std_msgs.msg       import Float64
-from geometry_msgs.msg  import PoseStamped
-from geometry_msgs.msg  import PoseWithCovarianceStamped
-from geometry_msgs.msg  import PoseArray
-from sensor_msgs.msg    import Range
-from nav_msgs.msg       import Odometry
-from rclpy.clock        import Clock
-from rclpy.duration     import Duration
-from pfilter            import ParticleFilter, squared_error
-
-from rclpy.qos          import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
-
+from std_msgs.msg               import Float64
+from geometry_msgs.msg          import PoseStamped
+from geometry_msgs.msg          import PoseWithCovarianceStamped
+from geometry_msgs.msg          import PoseArray
+from sensor_msgs.msg            import Range
+from nav_msgs.msg               import Odometry
+from rclpy.clock                import Clock
+from rclpy.duration             import Duration
+from pfilter                    import ParticleFilter, squared_error
+from depthai_ros_msgs.msg       import SpatialDetectionArray, SpatialDetection
+from rclpy.qos                  import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+# /turtle01/color/yolov4_Spatial_detections
+# /turtle01/odom
+# /turtle03/color/yolov4_Spatial_detections     
+# /turtle03/odom
+# /turtle04/color/yolov4_Spatial_detections
+# /turtle04/odom
+# /uwb/tof/n_3/n_4/distance
+# /uwb/tof/n_3/n_7/distance
+# /uwb/tof/n_4/n_7/distance
+# /vrpn_client_node/chair_final/pose
+# /vrpn_client_node/turtlebot1_cap/pose
+# /vrpn_client_node/turtlebot3_cap/pose
+# /vrpn_client_node/turtlebot4_cap/pose
 
 
 def parse_args():
@@ -104,7 +116,7 @@ class UWBParticleFilter(Node) :
 
 
         # Create filter
-        self.prior_fn = lambda n: np.random.uniform(-5,5,(n,2))
+        self.prior_fn = lambda n: np.random.uniform(-2,2,(n,2))
         self.pf = ParticleFilter(
             prior_fn =              self.prior_fn, 
             observe_fn =            self.calc_hypothesis,  
@@ -128,15 +140,18 @@ class UWBParticleFilter(Node) :
         self.object_ori_pose_array = np.array([])
         self.object_end_pose_array = np.array([])
 
-        self.get_logger().info("Subscribing to odometry")
-        self.pose_ori_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot03_cap/pose",  self.update_odom_ori_cb, 10)
-        self.pose_end_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot01_cap/pose",  self.update_odom_end_cb, 10)
+        self.get_logger().info("Subscribing to topics")
+        self.pose_ori_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot3_cap/pose",  self.update_odom_ori_cb, 10)
+        self.pose_end_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot1_cap/pose",  self.update_odom_end_cb, 10)
         self.odom_end_sub = self.create_subscription(Odometry, "/turtle01/odom",  self.update_odometry_end_cb, qos_profile=self.qos)
         self.odom_ori_sub = self.create_subscription(Odometry, "/turtle03/odom",  self.update_odometry_ori_cb, qos_profile=self.qos)
-        self.object_ori_sub = self.create_subscription(PoseArray, "/turtle01/spatial_detections",  self.update_object_ori_cb, 10)
-        self.object_end_sub = self.create_subscription(PoseArray, "/turtle03/spatial_detections",  self.update_object_end_cb, 10)
-        self.uwb_range_sub = self.create_subscription(Range, "/uwb/tof/n_2/n_3/distance", self.update_uwb_range_cb, 10)
+        self.object_ori_sub = self.create_subscription(SpatialDetectionArray, "/turtle03/color/yolov4_Spatial_detections",  self.update_object_ori_cb, 10)
+        self.object_end_sub = self.create_subscription(SpatialDetectionArray, "/turtle01/color/yolov4_Spatial_detections",  self.update_object_end_cb, 10)
+        self.uwb_34_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_4/distance", self.update_uwb34_range_cb, 10)
+        self.uwb_37_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_7/distance", self.update_uwb37_range_cb, 10)
+        self.uwb_47_range_sub = self.create_subscription(Range, "/uwb/tof/n_4/n_7/distance", self.update_uwb47_range_cb, 10)
         self.publisher_ = self.create_publisher(PoseStamped, '/pf_pose', 10)
+
 
         # Wait to get some odometry
         sys.stdout.write("Waiting for odom data...")
@@ -154,7 +169,9 @@ class UWBParticleFilter(Node) :
         # Calculate relative pose
         self.relative_pos = PoseStamped()
 
-        self.uwb_range = 0.0
+        self.uwb37_range = 0.0
+        self.uwb34_range = 0.0
+        self.uwb47_range = 0.0
         self.true_relative_pose = np.array([.0,.0])
         self.pos = PoseWithCovarianceStamped()
         self.pos.header.stamp = Clock().now().to_msg()
@@ -182,8 +199,6 @@ class UWBParticleFilter(Node) :
         self.pose_ori = pose
         # self.get_logger().info("end odom callback")
 
-
-
     def update_odom_end_cb(self, pose) :
         '''
             Update pose from VIO
@@ -200,21 +215,35 @@ class UWBParticleFilter(Node) :
         # self.get_logger().info("odom end cb")
 
     def update_object_ori_cb(self, pose_array):
-        self.object_ori_pose_array = np.array(pose_array.poses)
+        self.object_ori_pose_array = np.array(pose_array.detections)
         # if self.object_ori_pose_array.size != 0:
         #     self.get_logger().info("orignal objects number:{}".format(self.object_ori_pose_array.size))
 
     
     def update_object_end_cb(self, pose_array):
-        self.object_end_pose_array = np.array(pose_array.poses)
+        self.object_end_pose_array = np.array(pose_array.detections)
         # if self.object_end_pose_array.size != 0:
         #     self.get_logger().info("end objects number:{}".format(self.object_end_pose_array.size))
         
-    def update_uwb_range_cb(self, range):
+    def update_uwb34_range_cb(self, range):
         '''
             Update range from UWB
         '''
-        self.uwb_range = range.range - 0.27
+        self.uwb34_range = range.range - 0.32
+
+
+    def update_uwb37_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb37_range = range.range - 0.32
+
+
+    def update_uwb47_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb47_range = range.range - 0.32
 
 
     def velocity(self, x) :
@@ -292,13 +321,18 @@ class UWBParticleFilter(Node) :
             Upadate particle filter
         '''
         # Get UWB range
+
+        # new_meas = self.uwb37_range
+        # new_meas = np.array([self.uwb34_range, self.uwb37_range])
+        # new_meas = np.array([self.uwb34_range, self.uwb37_range, self.uwb47_range])
+
         if args.fuse_group == 2:
-            new_meas = np.array([self.uwb_range, self.uwb_range])
+            new_meas = np.array([self.uwb34_range, self.uwb37_range, self.uwb47_range, self.uwb34_range])
         else:
-            new_meas = self.uwb_range
+            new_meas = np.array([self.uwb34_range, self.uwb37_range, self.uwb47_range])
 
         self.get_logger().info("Real dist: {}".format(np.linalg.norm(self.true_relative_pose)))
-        self.get_logger().info("UWB Meas: {}\n".format(self.uwb_range))
+        self.get_logger().info("UWB34 Meas: {}， UWB37 Meas: {}, UWB47 Meas: {}".format(self.uwb34_range, self.uwb37_range, self.uwb47_range))
 
         # Calculate odom from last PF uptdate
         # print(self.pose_end.pose.position.x)
@@ -324,15 +358,15 @@ class UWBParticleFilter(Node) :
 
         # self.get_logger().info("vision: {}, uwb range: {}".format(new_vision_meas, self.uwb_range))
 
-        if args.fuse_group == 2 or args.fuse_group == 1:
-            if self.object_end_pose_array.size != 0  and self.object_ori_pose_array.size  != 0:
-                new_vision_meas = self.update_range_from_object_pose()
-                if math.fabs(new_vision_meas -  self.uwb_range) < 0.5:
-                    self.get_logger().info("vision: {}, uwb range: {}, truth: {}".format(new_vision_meas, self.uwb_range, np.linalg.norm(self.true_relative_pose)))
-                    if args.fuse_group == 1:
-                        new_meas = new_vision_meas
-                    else:
-                        new_meas[1] = new_vision_meas
+        # if args.fuse_group == 2 or args.fuse_group == 1:
+        #     if self.object_end_pose_array.size != 0  and self.object_ori_pose_array.size  != 0:
+        #         new_vision_meas = self.update_range_from_object_pose()
+        #         if math.fabs(new_vision_meas -  self.uwb37_range) < 0.5:
+        #             self.get_logger().info("vision: {}, uwb range: {}, truth: {}".format(new_vision_meas, self.uwb37_range, np.linalg.norm(self.true_relative_pose)))
+        #             if args.fuse_group == 1:
+        #                 new_meas = new_vision_meas
+        #             else:
+        #                 new_meas[3] = new_vision_meas
 
         self.pf.update(observed=new_meas)
 
@@ -358,9 +392,9 @@ class UWBParticleFilter(Node) :
         ground_truth = np.linalg.norm(self.true_relative_pose)
         uwb_range_estimation = np.linalg.norm([self.relative_pos.pose.position.x, self.relative_pos.pose.position.y, 0.0])
         self.errors.append(uwb_range_estimation - ground_truth)
-        self.errors_uwb_range.append(self.uwb_range - ground_truth)
+        self.errors_uwb_range.append(self.uwb37_range - ground_truth)
         self.pos_ground.append([self.true_relative_pose[0], self.true_relative_pose[1]])
-        self.pos_estimation.append([self.relative_pos.pose.position.x, self.relative_pos.pose.position.y])
+        self.pos_estimation.append([self.true_relative_pose[0], self.true_relative_pose[1], self.relative_pos.pose.position.x, self.relative_pos.pose.position.y])
         # if (time.perf_counter - self.plot_start) > 0.1 :
         self.plot_particles()
         #     self.plot_start = time.perf_counter()
@@ -385,7 +419,7 @@ class UWBParticleFilter(Node) :
             while rclpy.ok() :
                 # Update objective position and publish it
                 # self.get_logger().info('in loop')  
-                rclpy.spin(node)             
+                rclpy.spin(node)           
                 # rclpy_check_rate.sleep()
                 
 
