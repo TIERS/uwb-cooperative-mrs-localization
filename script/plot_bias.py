@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # x = np.random.normal(170, 10, 250)
-npzfile = np.load('bias_estimation.npz')
+npzfile = np.load('data/bias_estimation.npz')
 orientation_np=npzfile['orientation_np'] 
 bias_np=npzfile['bias_np'] 
 
