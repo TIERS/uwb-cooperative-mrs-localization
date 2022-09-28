@@ -28,9 +28,9 @@ print(errors_uwb_1.size)
 print(errors_uwb_2.size)
 print(errors_uwb_3.size)
 
-errors = [np.absolute(errors_uwb[100:errors_uwb.size - 5]), np.absolute(errors_uwb_1[100:errors_uwb_1.size - 5] + 0.27), 
-          np.absolute(errors_uwb_2[100: errors_uwb_2.size - 5]), np.absolute(errors_uwb_3[100:errors_uwb_3.size - 5]),
-          np.absolute(errors_uv[100:errors_uv.size - 5])]
+errors = [np.absolute(errors_uwb[10:errors_uwb.size - 5]), np.absolute(errors_uwb_1[10:errors_uwb_1.size - 5]), 
+          np.absolute(errors_uwb_2[10: errors_uwb_2.size - 5]), np.absolute(errors_uwb_3[10:errors_uwb_3.size - 5]),
+          np.absolute(errors_uv[10:errors_uv.size - 5])]
 
 # plt.boxplot(errors)
 
