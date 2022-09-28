@@ -56,14 +56,21 @@ class CalibrateOdom(Node) :
     def __init__(self) :
         super().__init__('cali_odom_rclpy')
 
+        # Define QoS profile for odom and UWB subscribers
+        self.qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
+
         self.get_logger().info("Subscribing to topics")
         self.turtle01_cap_sub     = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot1_cap/pose",  self.update_turtle01_cap_cb, 10)
         self.turtle03_cap_sub     = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot3_cap/pose",  self.update_turtle03_cap_cb, 10)
         self.turtle04_cap_sub     = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot4_cap/pose",  self.update_turtle04_cap_cb, 10)
         self.turtle05_cap_sub     = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot5_cap/pose",  self.update_turtle05_cap_cb, 10)
-        self.turtle01_odom_sub    = self.create_subscription(Odometry, "/turtle01/odom",  self.update_turtle01_odom_cb, 10)
-        self.turtle03_odom_sub    = self.create_subscription(Odometry, "/turtle03/odom",  self.update_turtle03_odom_cb, 10)
-        self.turtle04_odom_sub    = self.create_subscription(Odometry, "/turtle04/odom",  self.update_turtle04_odom_cb, 10)
+        self.turtle01_odom_sub    = self.create_subscription(Odometry, "/turtle01/odom",  self.update_turtle01_odom_cb, qos_profile=self.qos)
+        self.turtle03_odom_sub    = self.create_subscription(Odometry, "/turtle03/odom",  self.update_turtle03_odom_cb, qos_profile=self.qos)
+        self.turtle04_odom_sub    = self.create_subscription(Odometry, "/turtle04/odom",  self.update_turtle04_odom_cb, qos_profile=self.qos)
         self.turtle01_cap_pos     = PoseStamped()
         self.turtle03_cap_pos     = PoseStamped()
         self.turtle04_cap_pos     = PoseStamped()
@@ -76,10 +83,14 @@ class CalibrateOdom(Node) :
         self.turtle03_odom_pub    = self.create_publisher(Odometry, "/cali/turtle03/odom", 10)
         self.turtle04_odom_pub    = self.create_publisher(Odometry, "/cali/turtle04/odom", 10)
         self.turtle05_odom_pub    = self.create_publisher(Odometry, "/cali/turtle05/odom", 10)
-        self.turtle01_pos     = PoseStamped()
-        self.turtle03_pos     = PoseStamped()
-        self.turtle04_pos     = PoseStamped()
-        self.turtle05_pos     = PoseStamped()   
+        self.turtle01_pos         = PoseStamped()
+        self.turtle03_pos         = PoseStamped()
+        self.turtle04_pos         = PoseStamped()
+        self.turtle05_pos         = PoseStamped()   
+        self.turtle01_flag        = True
+        self.turtle03_flag        = True
+        self.turtle04_flag        = True
+        self.turtle05_flag        = True
 
         # Wait to get some odometry
         sys.stdout.write("Waiting for odom data...")
@@ -90,61 +101,69 @@ class CalibrateOdom(Node) :
             sys.stdout.flush()
             time.sleep(0.1)
         self.get_logger().info("Odometry locked. Current odom: \n{}".format(self.turtle03_odom.pose))
-        self.counter = 0  
 
     def update_turtle01_cap_cb(self, pose):
         self.turtle01_cap_pos = pose
-        if self.counter < 5:
-            self.turtle01_pos 
+        if self.turtle01_flag:
+            self.turtle01_pos = pose
 
     def update_turtle03_cap_cb(self, pose):
         self.turtle03_cap_pos = pose
-        if self.counter < 5:
+        if self.turtle03_flag: 
             self.turtle03_pos = pose
 
 
     def update_turtle04_cap_cb(self, pose):
         self.turtle04_cap_pos = pose
-        if self.counter < 5:
+        if self.turtle04_flag:
             self.turtle04_pos = pose
 
     def update_turtle05_cap_cb(self, pose):
         self.turtle05_cap_pos = pose       
-        if self.counter < 5:
+        if self.turtle05_flag:
             self.turtle05_pos = pose
 
     def update_turtle01_odom_cb(self, odom):
         # self.turtle01_odom = odom
+        self.turtle01_flag = False
         new_turtle01_odom = Odometry()
         new_turtle01_odom = odom
-        new_turtle01_odom.pose.position = self.turtle01_pos.pose.position
-        new_turtle01_odom.pose.orientation = self.turtle01_pos.pose.orientation
+        new_turtle01_odom.pose.pose.position.x  += self.turtle01_pos.pose.position.x
+        new_turtle01_odom.pose.pose.position.y  += self.turtle01_pos.pose.position.y
+        new_turtle01_odom.pose.pose.position.z  += self.turtle01_pos.pose.position.z
+        new_turtle01_odom.pose.pose.orientation = self.turtle01_pos.pose.orientation
         self.turtle01_odom_pub.publish(new_turtle01_odom)
+
+        # turlebot 5 has no odom data recorded, so put it here.
+        self.turtle05_flag = False
+        new_turtle05_odom = Odometry()
+        new_turtle05_odom.pose.pose.position.x += self.turtle05_pos.pose.position.x
+        new_turtle05_odom.pose.pose.position.y += self.turtle05_pos.pose.position.y
+        new_turtle05_odom.pose.pose.position.z += self.turtle05_pos.pose.position.z
+        new_turtle05_odom.pose.pose.orientation = self.turtle05_pos.pose.orientation
+        self.turtle05_odom_pub.publish(new_turtle05_odom)
 
     def update_turtle03_odom_cb(self, odom):
         # self.turtle03_odom = odom
+        self.turtle03_flag = False
         new_turtle03_odom = Odometry()
         new_turtle03_odom = odom
-        new_turtle03_odom.pose.position = self.turtle03_pos.pose.position
-        new_turtle03_odom.pose.orientation = self.turtle03_pos.pose.orientation
+        new_turtle03_odom.pose.pose.position.x += self.turtle03_pos.pose.position.x
+        new_turtle03_odom.pose.pose.position.y += self.turtle03_pos.pose.position.y
+        new_turtle03_odom.pose.pose.position.z += self.turtle03_pos.pose.position.z
+        new_turtle03_odom.pose.pose.orientation = self.turtle03_pos.pose.orientation
         self.turtle03_odom_pub.publish(new_turtle03_odom)
 
     def update_turtle04_odom_cb(self, odom):
         # self.turtle04_odom = odom
-        self.get_logger().info("callback start")
+        self.turtle04_flag = False
         new_turtle04_odom = Odometry()
         new_turtle04_odom = odom
-        new_turtle04_odom.pose.position = self.turtle04_pos.pose.position
-        new_turtle04_odom.pose.orientation = self.turtle04_pos.pose.orientation
+        new_turtle04_odom.pose.pose.position.x += self.turtle04_pos.pose.position.x
+        new_turtle04_odom.pose.pose.position.y += self.turtle04_pos.pose.position.y
+        new_turtle04_odom.pose.pose.position.z += self.turtle04_pos.pose.position.z
+        new_turtle04_odom.pose.pose.orientation = self.turtle04_pos.pose.orientation
         self.turtle04_odom_pub.publish(new_turtle04_odom)
-
-        new_turtle05_odom = Odometry()
-        new_turtle05_odom.pose.position = self.turtle05_pos.pose.position
-        new_turtle05_odom.pose.orientation = self.turtle05_pos.pose.orientation
-        self.turtle05_odom_pub.publish(new_turtle05_odom)
-        self.get_logger().info("callback done")
-
-
 
 def main(args=None):
     rclpy.init(args=args)
@@ -170,6 +189,10 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
+
+
+
         # self.chair2_cap_sub       = self.create_subscription(PoseStamped, "/vrpn_client_node/chair2/pose",  self.update_chair2_cap_cb, 10)
         # self.chair_final_cap_sub  = self.create_subscription(PoseStamped, "/vrpn_client_node/chair_final/pose",  self.update_chair_final_cap_cb, 10)
         # self.turtle05_odom_sub    = self.create_subscription(Odometry, "/turtle05/odom",  self.update_turtle05_odom_cb, 10)
