@@ -42,3 +42,27 @@ pfilter
 /vrpn_client_node/turtlebot5_cap/pose
 ```
 
+## Run
+### Positioning
+currently mainly run the code in 
+```
+pfilter_ros2_multi_robots.py
+```
+### Calibrate odom
+The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
+```
+/cali/turtle01/odom
+/cali/turtle03/odom
+/cali/turtle04/odom
+/cali/turtle05/odom
+```
+currently mainly run the code in 
+```
+script/cali_odom.py
+```
+
+### Results Visualization
+currently mainly run the code in 
+```
+script/errors/
+```

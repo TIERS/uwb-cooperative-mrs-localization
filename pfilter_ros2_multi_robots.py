@@ -18,27 +18,12 @@ from sensor_msgs.msg            import Range
 from nav_msgs.msg               import Odometry
 from rclpy.clock                import Clock
 from rclpy.duration             import Duration
-from pfilter                    import ParticleFilter, squared_error
 from depthai_ros_msgs.msg       import SpatialDetectionArray, SpatialDetection
 from rclpy.qos                  import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-# /turtle01/color/yolov4_Spatial_detections
-# /turtle01/odom
-# /turtle03/color/yolov4_Spatial_detections     
-# /turtle03/odom
-# /turtle04/color/yolov4_Spatial_detections
-# /turtle04/odom
-# /uwb/tof/n_3/n_4/distance
-# /uwb/tof/n_3/n_7/distance
-# /uwb/tof/n_4/n_7/distance
-# /vrpn_client_node/chair_final/pose
-# /vrpn_client_node/turtlebot1_cap/pose
-# /vrpn_client_node/turtlebot3_cap/pose
-# /vrpn_client_node/turtlebot4_cap/pose
 
 
 def parse_args():
@@ -48,10 +33,28 @@ def parse_args():
     return args
 
 args = parse_args()
-print(args.fuse_group)
+
+err_folder = "../errors/"
+pos_folder = "../pos/"
+img_u = "../images/images_u/"
+img_u_v = "../images/images_u_v/"
+img_uv = "../images/images_uv/"
+if os.path.exists(err_folder):
+    os.makedirs(err_folder)
+
+if os.path.exists(pos_folder):
+    os.makedirs(pos_folder)
+
+if os.path.exists(img_u):
+    os.makedirs(img_u)
+
+if os.path.exists(img_u_v):
+    os.makedirs(img_u_v)
+
+if os.path.exists(img_uv):
+    os.makedirs(img_uv)
 
 error_uwb_ranges = '../errors/error_uwb.csv'
-
 error_file_name = '../errors/error_u.csv'
 images_save_path = '../images/images_u/'
 pos_path = '../pos/pos_u.csv'
@@ -80,6 +83,12 @@ class UWBParticleFilter(Node) :
 
         # Init node
         super().__init__('relative_pf_rclpy')
+        # Define QoS profile for odom and UWB subscribers
+        self.qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
 
         self.counter = 0
 
@@ -141,15 +150,18 @@ class UWBParticleFilter(Node) :
         self.object_end_pose_array = np.array([])
 
         self.get_logger().info("Subscribing to topics")
-        self.pose_ori_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot3_cap/pose",  self.update_odom_ori_cb, 10)
+        self.pose_ori_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot5_cap/pose",  self.update_odom_ori_cb, 10)
         self.pose_end_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot1_cap/pose",  self.update_odom_end_cb, 10)
         self.odom_end_sub = self.create_subscription(Odometry, "/turtle01/odom",  self.update_odometry_end_cb, qos_profile=self.qos)
         self.odom_ori_sub = self.create_subscription(Odometry, "/turtle03/odom",  self.update_odometry_ori_cb, qos_profile=self.qos)
-        self.object_ori_sub = self.create_subscription(SpatialDetectionArray, "/turtle03/color/yolov4_Spatial_detections",  self.update_object_ori_cb, 10)
+        self.object_ori_sub = self.create_subscription(SpatialDetectionArray, "/turtle05/color/yolov4_Spatial_detections",  self.update_object_ori_cb, 10)
         self.object_end_sub = self.create_subscription(SpatialDetectionArray, "/turtle01/color/yolov4_Spatial_detections",  self.update_object_end_cb, 10)
         self.uwb_34_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_4/distance", self.update_uwb34_range_cb, 10)
         self.uwb_37_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_7/distance", self.update_uwb37_range_cb, 10)
         self.uwb_47_range_sub = self.create_subscription(Range, "/uwb/tof/n_4/n_7/distance", self.update_uwb47_range_cb, 10)
+        self.uwb_35_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_4/distance", self.update_uwb34_range_cb, 10)
+        self.uwb_45_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_7/distance", self.update_uwb37_range_cb, 10)
+        self.uwb_75_range_sub = self.create_subscription(Range, "/uwb/tof/n_4/n_7/distance", self.update_uwb47_range_cb, 10)
         self.publisher_ = self.create_publisher(PoseStamped, '/pf_pose', 10)
 
 
