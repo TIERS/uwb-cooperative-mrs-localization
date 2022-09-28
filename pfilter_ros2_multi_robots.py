@@ -20,6 +20,7 @@ from rclpy.clock                import Clock
 from rclpy.duration             import Duration
 from depthai_ros_msgs.msg       import SpatialDetectionArray, SpatialDetection
 from rclpy.qos                  import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from pfilter                    import ParticleFilter, squared_error
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,19 +40,19 @@ pos_folder = "../pos/"
 img_u = "../images/images_u/"
 img_u_v = "../images/images_u_v/"
 img_uv = "../images/images_uv/"
-if os.path.exists(err_folder):
+if not os.path.exists(err_folder):
     os.makedirs(err_folder)
 
-if os.path.exists(pos_folder):
+if not os.path.exists(pos_folder):
     os.makedirs(pos_folder)
 
-if os.path.exists(img_u):
+if not os.path.exists(img_u):
     os.makedirs(img_u)
 
-if os.path.exists(img_u_v):
+if not os.path.exists(img_u_v):
     os.makedirs(img_u_v)
 
-if os.path.exists(img_uv):
+if not os.path.exists(img_uv):
     os.makedirs(img_uv)
 
 error_uwb_ranges = '../errors/error_uwb.csv'
