@@ -2,9 +2,12 @@
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 ## Dependency
-
+<!-- TODO: add installation approaches -->
 ros2 galactic
 pfilter
+numpy
+depthai_ros_msgs
+matplotlib
 
 ## Data
 ### Recorded ros2 bags from 2022/09/23. 
@@ -44,11 +47,35 @@ pfilter
 
 ## Run
 ### Positioning
+<!-- TODO: update pf method for multi-robots -->
+<!-- TODO: verify fusion pattern, for example, how many uwb ranges and spatial detections needed -->
 currently mainly run the code in 
 ```
-pfilter_ros2_multi_robots.py
+pfilter_ros2_multi_robots.py 0
 ```
-### Calibrate odom
+Arguments meaning:
+0: only uwb
+1: uwb or vision
+2: uwb and vision
+
+After running this code, the images of particles will be saved in 
+```
+../images/
+    image_u/      #only uwb
+    image_u_v/    #uwb or vision
+    image_uv/     #uwb & vision
+```
+The groudtruth and estimated relative pose will be in 
+```
+../pos/
+```
+The errors will be in 
+```
+../errors/
+```
+
+### Calibration
+#### odom 
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
 ```
 /cali/turtle01/odom
@@ -60,9 +87,24 @@ currently mainly run the code in
 ```
 script/cali_odom.py
 ```
+#### uwb
+currently mainly run the code in 
+```
+script/bias_estimation.py
+script/plot_bias.py
+```
+
+#### stereo camera
+<!-- TODO: bias are big, needs to check the code -->
+currently mainly run the code in 
+```
+script/camera_opti.py
+```
 
 ### Results Visualization
+<!-- TODO: violin plot or rainbow plot -->
 currently mainly run the code in 
 ```
 script/errors/
 ```
+
