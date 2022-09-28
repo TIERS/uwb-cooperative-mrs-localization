@@ -76,6 +76,7 @@ The errors will be in
 
 ### Calibration
 #### odom 
+<!-- TODO: the code works, needs to record new odom data for the run pf-->
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
 ```
 /cali/turtle01/odom
@@ -95,7 +96,7 @@ script/plot_bias.py
 ```
 
 #### stereo camera
-<!-- TODO: bias are big, needs to check the code -->
+<!-- FIXME: bias are big, needs to check the code -->
 currently mainly run the code in 
 ```
 script/camera_opti.py
