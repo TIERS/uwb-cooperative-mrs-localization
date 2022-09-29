@@ -89,11 +89,28 @@ currently mainly run the code in
 script/cali_odom.py
 ```
 #### uwb
-currently mainly run the code in 
+
+currently mainly run the following. First run 
 ```
 script/bias_estimation.py
+```
+while running a rosbag. It will then save the information in
+
+```
+/data/bias_estimation.npz
+```
+Then run the script
+
+```
 script/plot_bias.py
 ```
+It will save the images in
+
+```
+/images/bias_estimation.png
+```
+
+
 
 #### stereo camera
 <!-- FIXME: bias are big, needs to check the code -->
