@@ -131,6 +131,8 @@ script/errors/
 
 #### Trajectory estimation
 Best results for now.
-<img src="./resuls/uwb_with_vision_01.png"
+<p align="center">
+<img src="./results/uwb_with_vision_01.png"
      alt="State Estimation based on UWB integrating with vision spatial information"
-     style="float: left; margin-right: 10px;" />
+     style="width:300px;" />
+</p>
