@@ -51,9 +51,13 @@ matplotlib
 <!-- TODO: verify fusion pattern, for example, how many uwb ranges and spatial detections needed -->
 currently mainly run the code in 
 ```
-pfilter_ros2_multi_robots.py 0
+pfilter_ros2_multi_robots_only_uwb.py 0
 ```
-Arguments meaning:
+If we with vision, we should use the code in 
+```
+pfilter_ros2_multi_robots_with_vision.py 2
+```
+Arguments meaning(currently not used):
 0: only uwb
 1: uwb or vision
 2: uwb and vision
@@ -76,7 +80,6 @@ The errors will be in
 
 ### Calibration
 #### odom 
-<!-- TODO: the code works, needs to record new odom data for the run pf-->
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
 ```
 /cali/turtle01/odom
