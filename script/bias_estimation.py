@@ -60,8 +60,12 @@ class BiasEstimation(Node) :
 
         self.opti_distance = 0
 
-        self.bias=[]
-        self.orientation=[]
+        self.bias_list=[]
+        self.orientation_list=[]
+        self.optitrack_turtle01_orientation_list=[]
+        self.optitrack_turtle03_orientation_list=[]
+        self.opti_distance_list=[]
+        self.uwb_range_list=[]
 
 
 
@@ -107,20 +111,33 @@ class BiasEstimation(Node) :
         print("Opti distance: {}, uwb: {}".format(self.opti_distance, self.uwb_range))
 
         bias=self.uwb_range - self.opti_distance
-        self.bias.append(bias)
-        self.orientation.append(optitrack_turtle03_orientation)
+        self.bias_list.append(bias)
+        self.orientation_list.append(optitrack_turtle03_orientation)
 
-        bias_np = np.array(self.bias)
-        orientation_np = np.array(self.orientation)
+        self.optitrack_turtle01_orientation_list.append(optitrack_turtle01_orientation)
+        self.optitrack_turtle03_orientation_list.append(optitrack_turtle03_orientation)
+        self.opti_distance_list.append(self.opti_distance)
+        self.uwb_range_list.append(self.uwb_range)
+
+        opti_distance_np = np.array(self.opti_distance_list)
+        uwb_range_np = np.array(self.uwb_range_list)
+        bias_np = np.array(self.bias_list)
+        orientation_np = np.array(self.orientation_list)
+        optitrack_turtle01_orientation_np = np.array(self.optitrack_turtle01_orientation_list)
+        optitrack_turtle03_orientation_np = np.array(self.optitrack_turtle03_orientation_list)
 
         print("bias {}".format(bias))       
 
         # np.savetxt('bias_estimation.txt',(orientation_np,bias_np),delimiter=',')
 
 
-        np.savez('data/bias_estimation.npz',
+        np.savez('data/bias_estimation_2robot_uwb.npz',        
+                    opti_distance_np = opti_distance_np, 
+                    uwb_range_np = uwb_range_np, 
+                    bias_np = bias_np, 
                     orientation_np = orientation_np, 
-                    bias_np = bias_np
+                    optitrack_turtle01_orientation_np = optitrack_turtle01_orientation_np, 
+                    optitrack_turtle03_orientation_np = optitrack_turtle03_orientation_np
                     )
 
 
