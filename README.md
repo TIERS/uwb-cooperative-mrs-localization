@@ -5,7 +5,7 @@ This repo contains code for refine the Ultral-Wideband ranging with the detected
 <!-- TODO: add installation approaches -->
 ros2 galactic
 pfilter
-numpy
+numpyls
 depthai_ros_msgs
 matplotlib
 
@@ -17,7 +17,14 @@ matplotlib
 3robots_moving_circles: turltebot1, turltebot3, and turtlebot4 were all moving a circle at the same time and observed the chair from time to time.
 
 ### Recorded ros2 bags from 2022/09/28.
-3robots_moving_1_static_01: turtlebot1, turtlebot3, and turtlebot4 were moving in a circle while turtlebot 5 static. 2 chairs were added during the recording as objects. Topics can be seen as follows.
+3robots_moving_1_static_01: turtlebot1, turtlebot3, and turtlebot4 were moving in a circle while turtlebot 5 static. 2 chairs were added during the recording as objects.
+
+### Recorded ros2 bags from 2022/10/04.
+4robots_data_01: turtlebot1, turtlebot3, and turtlebot4 were moving in different circles while turtlebot 5 static. 2 chairs were added during the recording as objects. 
+
+cali_4robots_data_01: The odometry calibrated version based on the above one.
+
+Topics can be seen as follows.
 ```
 # spatial detection results. turtle05 can always see one object.
 /turtle01/color/yolov4_Spatial_detections
@@ -47,27 +54,26 @@ matplotlib
 
 ## Run
 ### Positioning
+#### Run Once
 <!-- TODO: update pf method for multi-robots -->
 <!-- TODO: verify fusion pattern, for example, how many uwb ranges and spatial detections needed -->
-currently mainly run the code in 
+currently, if you only want to run one round of each filter,  mainly run the code in 
 ```
-pfilter_ros2_multi_robots_only_uwb.py 0
-```
-If we with vision, we should use the code in 
-```
-pfilter_ros2_multi_robots_with_vision.py 2
+pfilter_ros2_uwb_position_multi_robots.py --fuse_group 0 --round 0
 ```
 Arguments meaning(currently not used):
+```
+--fuse_group 
 0: only uwb
 1: uwb or vision
 2: uwb and vision
 
+--round  # this indicates how many rounds that your filter will run for each fusing group.
+```
+
 After running this code, the images of particles will be saved in 
 ```
 ../images/
-    image_u/      #only uwb
-    image_u_v/    #uwb or vision
-    image_uv/     #uwb & vision
 ```
 The groudtruth and estimated relative pose will be in 
 ```
@@ -77,10 +83,17 @@ The errors will be in
 ```
 ../errors/
 ```
+#### Run In a Loop
+Run a script that can generate all the results of all rounds of different fusing group.
+```
+python script/run_pf.py
+```
+
 
 ### Calibration
 #### odom 
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
+
 ```
 /cali/turtle01/odom
 /cali/turtle03/odom
@@ -89,13 +102,13 @@ The odom has translations compared with its global position. So we need to calib
 ```
 currently mainly run the code in 
 ```
-script/cali_odom.py
+python script/cali_odom.py
 ```
 #### uwb
 
 currently mainly run the following. First run 
 ```
-script/bias_estimation.py
+python script/bias_estimation.py
 ```
 while running a rosbag. It will then save the information in
 
@@ -105,7 +118,7 @@ while running a rosbag. It will then save the information in
 Then run the script
 
 ```
-script/plot_bias.py
+python script/plot_bias.py
 ```
 It will save the images in
 
@@ -132,7 +145,7 @@ script/errors/
 #### Trajectory estimation
 Best results for now.
 <p align="center">
-<img src="./results/uwb_with_vision_01.png"
+<img src="./demos/uwb_with_vision_01.png"
      alt="State Estimation based on UWB integrating with vision spatial information"
      style="width:300px;" />
 </p>
