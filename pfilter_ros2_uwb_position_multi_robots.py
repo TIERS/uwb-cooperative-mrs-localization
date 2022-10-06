@@ -29,6 +29,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+# rclpy.logging.set_logger_level('pf_relative_estimation', rclpy.logging.LoggingSeverity.ERROR)
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Options to control relative localization with only UWB, assisit with Vision, and all if vision available')
     parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: with vision replace new measurement, 2: uwb and vision together')
