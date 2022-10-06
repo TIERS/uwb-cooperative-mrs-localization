@@ -48,7 +48,7 @@ if args.fuse_group == 0:
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_u_{}/'.format(args.round)
+    images_save_path = './results/images/images_u/images_u_{}/'.format(args.round)
 
 if args.fuse_group == 1:
     err_folder = "./results/errors/errors_u_v/"
@@ -57,7 +57,7 @@ if args.fuse_group == 1:
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_u_v_{}/'.format(args.round)
+    images_save_path = './results/images/images_u_v/images_u_v_{}/'.format(args.round)
 
 if args.fuse_group == 2:
     err_folder = "./results/errors/errors_uv/"
@@ -66,7 +66,7 @@ if args.fuse_group == 2:
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_uv_{}/'.format(args.round)
+    images_save_path = './results/images/images_uv/images_uv_{}/'.format(args.round)
 
 if not os.path.exists(err_folder):
     os.makedirs(err_folder)
@@ -451,6 +451,14 @@ class UWBParticleFilter(Node) :
         plt.plot(self.pf.mean_state[0], self.pf.mean_state[1], 'x', c='green')
         plt.plot(self.pf.map_state[0], self.pf.map_state[1], 'x', c='orange')
 
+        plt.plot(self.true_relative_pose_turtle03[0], self.true_relative_pose_turtle03[1], 'o', c='red')
+        plt.plot(self.pf.mean_state[2], self.pf.mean_state[3], 'o', c='green')
+        plt.plot(self.pf.map_state[2], self.pf.map_state[3], 'o', c='orange')
+
+        plt.plot(self.true_relative_pose_turtle04[0], self.true_relative_pose_turtle04[1], '*', c='red')
+        plt.plot(self.pf.mean_state[4], self.pf.mean_state[5], '*', c='green')
+        plt.plot(self.pf.map_state[4], self.pf.map_state[5], '*', c='orange')
+
         plt.scatter(self.pf.transformed_particles[:,0], self.pf.transformed_particles[:,1], color="lightgray")
         plt.xlim(-9,9)
         plt.ylim(-9,9)
@@ -596,7 +604,7 @@ class UWBParticleFilter(Node) :
                                     self.relative_pos_turtle03.pose.position.x, self.relative_pos_turtle03.pose.position.y,
                                     self.relative_pos_turtle04.pose.position.x, self.relative_pos_turtle04.pose.position.y])
         # if (time.perf_counter - self.plot_start) > 0.1 :
-        self.plot_particles()
+        # self.plot_particles()
         #     self.plot_start = time.perf_counter()
         # self.get_logger().info("here")
 
@@ -633,13 +641,13 @@ class UWBParticleFilter(Node) :
         self.get_logger().info("PF ends and Saving Results.")
         np.savetxt(error_file, 
            self.errors,
-           header="err_u_t15, err_u_t35, err_u_t45, err_u_t13, err_u_t14, err_u_t34, err_eu_t15, err_eu_t35, err_eu_t45, err_eu_t13, err_eu_t14, err_eu_t34",
+        #    header="err_u_t15, err_u_t35, err_u_t45, err_u_t13, err_u_t14, err_u_t34, err_eu_t15, err_eu_t35, err_eu_t45, err_eu_t13, err_eu_t14, err_eu_t34",
            delimiter =", ", 
            fmt ='% s')
 
         np.savetxt(range_file, 
            self.ranges,
-           header="range_err_u_t15, range_err_u_t35, range_err_u_t45, range_err_u_t13, range_err_u_t14, range_err_u_t34, range_err_eu_t15, range_err_eu_t35, range_err_eu_t45, range_err_eu_t13, range_err_eu_t14, range_err_eu_t34",
+        #    header="range_err_u_t15, range_err_u_t35, range_err_u_t45, range_err_u_t13, range_err_u_t14, range_err_u_t34, range_err_eu_t15, range_err_eu_t35, range_err_eu_t45, range_err_eu_t13, range_err_eu_t14, range_err_eu_t34",
            delimiter =", ", 
            fmt ='% s')
 
