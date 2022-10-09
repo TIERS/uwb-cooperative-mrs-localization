@@ -149,3 +149,10 @@ Best results for now.
      alt="State Estimation based on UWB integrating with vision spatial information"
      style="width:300px;" />
 </p>
+
+## TODO
+- [ ] add polyfit uwb bia value to the data input
+- [ ] run single pf in each robot
+- [ ] have a centeralized pf 
+- [ ] add feedback data from centeralized pf to local pf.
+- [ ] improve visualization of results
