@@ -55,8 +55,6 @@ Topics can be seen as follows.
 ## Run
 ### Positioning
 #### Run Once
-<!-- TODO: update pf method for multi-robots -->
-<!-- TODO: verify fusion pattern, for example, how many uwb ranges and spatial detections needed -->
 currently, if you only want to run one round of each filter,  mainly run the code in 
 ```
 pfilter_ros2_uwb_position_multi_robots.py --fuse_group 0 --round 0
