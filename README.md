@@ -142,11 +142,16 @@ script/errors/
 
 #### Trajectory estimation
 Best results for now.
-<p align="center">
-<img src="./demos/uwb_with_vision_01.png"
-     alt="State Estimation based on UWB integrating with vision spatial information"
-     style="width:300px;" />
-</p>
+
+##### Centralized PF state estimation
+###### Trajectories
+only UWB ranges             |  UWB ranges or spatial detection          |  UWB ranges and spatial detection
+:-------------------------:|:-------------------------: |:-------------------------:
+![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
+
+##### Federated PF state estimation
+###### Errors
+![](./demos/centralized_pf_xy_error.png)
 
 ## TODO
 - [ ] add polyfit uwb bia value to the data input
