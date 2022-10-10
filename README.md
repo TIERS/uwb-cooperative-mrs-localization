@@ -154,8 +154,9 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 ![](./demos/centralized_pf_xy_error.png)
 
 ## TODO
-- [ ] add polyfit uwb bia value to the data input
-- [ ] run single pf in each robot
-- [ ] have a centeralized pf 
+- [ ] add polyfit uwb bia value to the data input.
+- [ ] run single pf in each robot.
+- [ ] have a centeralized pf. 
 - [ ] add feedback data from centeralized pf to local pf.
 - [ ] improve visualization of results
+- [ ] add triangulation code and results.
