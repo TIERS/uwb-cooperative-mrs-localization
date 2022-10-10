@@ -383,6 +383,7 @@ class UWBParticleFilter(Node) :
         plt.plot(self.pf.map_state[0], self.pf.map_state[1], 'x', c='orange')
 
         plt.scatter(self.pf.transformed_particles[:,0], self.pf.transformed_particles[:,1], color="lightgray")
+        
         plt.xlim(-9,9)
         plt.ylim(-9,9)
 
@@ -500,13 +501,11 @@ class UWBParticleFilter(Node) :
         self.get_logger().info("PF ends and Saving Results.")
         np.savetxt(error_file, 
            self.errors,
-        #    header="err_u_t15, err_u_t35, err_u_t45, err_u_t13, err_u_t14, err_u_t34, err_eu_t15, err_eu_t35, err_eu_t45, err_eu_t13, err_eu_t14, err_eu_t34",
            delimiter =", ", 
            fmt ='% s')
 
         np.savetxt(range_file, 
            self.ranges,
-        #    header="range_err_u_t15, range_err_u_t35, range_err_u_t45, range_err_u_t13, range_err_u_t14, range_err_u_t34, range_err_eu_t15, range_err_eu_t35, range_err_eu_t45, range_err_eu_t13, range_err_eu_t14, range_err_eu_t34",
            delimiter =", ", 
            fmt ='% s')
 
