@@ -139,6 +139,8 @@ class UWBTriangulation(Node) :
         self.true_relative_pose_fake     = np.array([2.0, 3.0])
 
         self.pos_estimation = []
+
+        time.sleep(1)
         
 
     def update_odom_ori_cb(self, pose) :
@@ -259,7 +261,6 @@ class UWBTriangulation(Node) :
         positions[0] = np.array([0, 0])
         positions[1] = np.array([self.uwb25_range, 0])
 
-        iterative_positions = False
         try:
             arg1 = (self.uwb25_range**2 + self.uwb75_range**2 - self.uwb27_range**2) / (2*self.uwb25_range*self.uwb75_range)
             # if(arg1<-1.0):
