@@ -128,9 +128,9 @@ class CalibrateOdom(Node) :
         self.turtle01_flag = False
         new_turtle01_odom = Odometry()
         new_turtle01_odom = odom
-        new_turtle01_odom.pose.pose.position.x  += self.turtle01_pos.pose.position.x
-        new_turtle01_odom.pose.pose.position.y  += self.turtle01_pos.pose.position.y
-        new_turtle01_odom.pose.pose.position.z  += self.turtle01_pos.pose.position.z
+        new_turtle01_odom.pose.pose.position.x = -new_turtle01_odom.pose.pose.position.x + self.turtle01_pos.pose.position.x
+        new_turtle01_odom.pose.pose.position.y = -new_turtle01_odom.pose.pose.position.y + self.turtle01_pos.pose.position.y
+        new_turtle01_odom.pose.pose.position.z = -new_turtle01_odom.pose.pose.position.z + self.turtle01_pos.pose.position.z
         new_turtle01_odom.pose.pose.orientation = self.turtle01_pos.pose.orientation
         self.turtle01_odom_pub.publish(new_turtle01_odom)
 
@@ -159,9 +159,9 @@ class CalibrateOdom(Node) :
         self.turtle04_flag = False
         new_turtle04_odom = Odometry()
         new_turtle04_odom = odom
-        new_turtle04_odom.pose.pose.position.x = -new_turtle04_odom.pose.pose.position.x + self.turtle04_pos.pose.position.x
-        new_turtle04_odom.pose.pose.position.y = -new_turtle04_odom.pose.pose.position.y + self.turtle04_pos.pose.position.y
-        new_turtle04_odom.pose.pose.position.z = -new_turtle04_odom.pose.pose.position.z + self.turtle04_pos.pose.position.z
+        new_turtle04_odom.pose.pose.position.x  += self.turtle04_pos.pose.position.x
+        new_turtle04_odom.pose.pose.position.y  += self.turtle04_pos.pose.position.y
+        new_turtle04_odom.pose.pose.position.z  += self.turtle04_pos.pose.position.z
         new_turtle04_odom.pose.pose.orientation = self.turtle04_pos.pose.orientation
         self.turtle04_odom_pub.publish(new_turtle04_odom)
 
