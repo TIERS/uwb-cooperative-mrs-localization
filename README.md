@@ -55,8 +55,6 @@ Topics can be seen as follows.
 ## Run
 ### Positioning
 #### Run Once
-<!-- TODO: update pf method for multi-robots -->
-<!-- TODO: verify fusion pattern, for example, how many uwb ranges and spatial detections needed -->
 currently, if you only want to run one round of each filter,  mainly run the code in 
 ```
 pfilter_ros2_uwb_position_multi_robots.py --fuse_group 0 --round 0
@@ -144,8 +142,21 @@ script/errors/
 
 #### Trajectory estimation
 Best results for now.
-<p align="center">
-<img src="./demos/uwb_with_vision_01.png"
-     alt="State Estimation based on UWB integrating with vision spatial information"
-     style="width:300px;" />
-</p>
+
+##### Centralized PF state estimation
+###### Trajectories
+only UWB ranges             |  UWB ranges or spatial detection          |  UWB ranges and spatial detection
+:-------------------------:|:-------------------------: |:-------------------------:
+![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
+
+##### Federated PF state estimation
+###### Errors
+![](./demos/centralized_pf_xy_error.png)
+
+## TODO
+- [ ] add polyfit uwb bia value to the data input.
+- [ ] run single pf in each robot.
+- [ ] have a centeralized pf. 
+- [ ] add feedback data from centeralized pf to local pf.
+- [ ] improve visualization of results
+- [ ] add triangulation code and results.

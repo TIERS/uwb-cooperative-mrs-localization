@@ -6,6 +6,7 @@ num_rounds = 20
 
 
 fusion = ["only uwb", "uwb or vision", "uwb and vision"]
+print("------ START ------")
 for i in range(3):
     print("------ {} ------".format(fusion[i]))
     for r in tqdm.tqdm(range(num_rounds)):
