@@ -42,31 +42,31 @@ def parse_args():
 args = parse_args()
 
 if args.fuse_group == 0:
-    err_folder = "./results/errors/errors_u/"
-    pos_folder = "./results/pos/pos_u/"
-    range_folder = "./results/ranges/ranges_u/"
+    err_folder = "./results/pfilter/errors/errors_u/"
+    pos_folder = "./results/pfilter/pos/pos_u/"
+    range_folder = "./results/pfilter/ranges/ranges_u/"
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_u/images_u_{}/'.format(args.round)
+    images_save_path = './results/pfilter/images/images_u/images_u_{}/'.format(args.round)
 
 if args.fuse_group == 1:
-    err_folder = "./results/errors/errors_u_v/"
-    pos_folder = "./results/pos/pos_u_v/"
-    range_folder = "./results/ranges/ranges_u_v/"
+    err_folder = "./results/pfilter/errors/errors_u_v/"
+    pos_folder = "./results/pfilter/pos/pos_u_v/"
+    range_folder = "./results/pfilter/ranges/ranges_u_v/"
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_u_v/images_u_v_{}/'.format(args.round)
+    images_save_path = './results/pfilter/images/images_u_v/images_u_v_{}/'.format(args.round)
 
 if args.fuse_group == 2:
-    err_folder = "./results/errors/errors_uv/"
-    pos_folder = "./results/pos/pos_uv/"
-    range_folder = "./results/ranges/ranges_uv/"
+    err_folder = "./results/pfilter/errors/errors_uv/"
+    pos_folder = "./results/pfilter/pos/pos_uv/"
+    range_folder = "./results/pfilter/ranges/ranges_uv/"
     error_file = err_folder + "error_{}.csv".format(args.round)
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     range_file = range_folder + "range_{}.csv".format(args.round)
-    images_save_path = './results/images/images_uv/images_uv_{}/'.format(args.round)
+    images_save_path = './results/pfilter/images/images_uv/images_uv_{}/'.format(args.round)
 
 if not os.path.exists(err_folder):
     os.makedirs(err_folder)

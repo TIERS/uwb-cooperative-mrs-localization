@@ -84,7 +84,7 @@ The errors will be in
 #### Run In a Loop
 Run a script that can generate all the results of all rounds of different fusing group.
 ```
-python script/run_pf.py
+python script/run_filter.py
 ```
 
 
@@ -142,6 +142,8 @@ script/errors/
 
 #### Trajectory estimation
 Best results for now.
+##### Triangulation state estimation
+
 
 ##### Centralized PF state estimation
 ###### Trajectories
@@ -159,4 +161,4 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 - [ ] have a centeralized pf. 
 - [ ] add feedback data from centeralized pf to local pf.
 - [ ] improve visualization of results
-- [ ] add triangulation code and results.
+- [x] add triangulation code and results.
