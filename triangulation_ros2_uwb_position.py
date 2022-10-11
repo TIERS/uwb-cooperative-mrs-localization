@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Options to control relative localization with only UWB, assisit with Vision, and all if vision available')
-    parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: with vision replace new measurement, 2: uwb and vision together')
+    # parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: with vision replace new measurement, 2: uwb and vision together')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
     return args
@@ -105,6 +105,10 @@ class UWBTriangulation(Node) :
         self.uwb_35_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_3/n_5/distance", self.update_uwb35_range_cb, 10)
         self.uwb_45_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_4/n_5/distance", self.update_uwb45_range_cb, 10)
         self.uwb_75_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_7/n_5/distance", self.update_uwb75_range_cb, 10)
+        self.uwb_25_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_2/n_5/distance", self.update_uwb25_range_cb, 10)
+        self.uwb_23_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_2/n_3/distance", self.update_uwb23_range_cb, 10)
+        self.uwb_24_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_2/n_4/distance", self.update_uwb24_range_cb, 10)
+        self.uwb_27_range_sub = self.node.create_subscription(Range, "/uwb/tof/n_2/n_7/distance", self.update_uwb27_range_cb, 10)
 
         self.publisher_turtle01_ = self.node.create_publisher(PoseStamped, '/pf_turtle01_pose', 10)
         self.publisher_turtle03_ = self.node.create_publisher(PoseStamped, '/pf_turtle03_pose', 10)
@@ -119,6 +123,10 @@ class UWBTriangulation(Node) :
         self.uwb35_range = 0.0
         self.uwb45_range = 0.0
         self.uwb75_range = 0.0
+        self.uwb25_range = 0.0
+        self.uwb27_range = 0.0
+        self.uwb23_range = 0.0
+        self.uwb24_range = 0.0
         
         self.uwb3f_range = 0.0
         self.uwb4f_range = 0.0
@@ -227,58 +235,59 @@ class UWBTriangulation(Node) :
         '''
         self.uwb75_range = range.range - 0.32
 
-    
+    def update_uwb25_range_cb(self, range):
+
+        self.uwb25_range = range.range - 0.32
+
+    def update_uwb23_range_cb(self, range):
+
+        self.uwb23_range = range.range - 0.32
+
+    def update_uwb24_range_cb(self, range):
+
+        self.uwb24_range = range.range - 0.32
+
+    def update_uwb27_range_cb(self, range):
+
+        self.uwb27_range = range.range - 0.32
     
     def calculate_relative_poses(self) :
         '''
             Calculates relative poses of nodes doing TOF
         '''
-        # fake static robot uwb ranges
-        self.uwb7f_range = np.linalg.norm(np.array([self.true_relative_pose_turtle01[0] - self.true_relative_pose_fake[0],
-                                self.true_relative_pose_turtle01[1] - self.true_relative_pose_fake[1]])) + np.random.normal(0, 0.32)
-        self.uwb4f_range = np.linalg.norm(np.array([self.true_relative_pose_turtle04[0] - self.true_relative_pose_fake[0],
-                            self.true_relative_pose_turtle04[1] - self.true_relative_pose_fake[1]]))  + np.random.normal(0, 0.32)                           
-        self.uwb3f_range = np.linalg.norm(np.array([self.true_relative_pose_turtle03[0] - self.true_relative_pose_fake[0],
-                            self.true_relative_pose_turtle03[1] - self.true_relative_pose_fake[1]]))  + np.random.normal(0, 0.32)
-        self.uwb5f_range = np.linalg.norm(self.true_relative_pose_fake) + np.random.normal(0, 0.32)
-
-        # uwb_ranges = np.array([
-        #     self.uwb5f_range, self.uwb7f_range, self.uwb3f_range, self.uwb4f_range,
-        #     self.uwb37, self.uwb47_range, self.uwb34_range
-        # ])
         positions = [np.zeros(2) for _ in range(5)] 
         positions[0] = np.array([0, 0])
-        positions[1] = np.array([self.uwb5f_range, 0])
+        positions[1] = np.array([self.uwb25_range, 0])
 
         iterative_positions = False
         try:
-            arg1 = (self.uwb5f_range**2 + self.uwb75_range**2 - self.uwb7f_range**2) / (2*self.uwb5f_range*self.uwb75_range)
-            if(arg1<-1.0):
-                arg1 = -1.0
-            elif (arg1 > 1.0):
-                arg1 = 1.0
+            arg1 = (self.uwb25_range**2 + self.uwb75_range**2 - self.uwb27_range**2) / (2*self.uwb25_range*self.uwb75_range)
+            # if(arg1<-1.0):
+            #     arg1 = -1.0
+            # elif (arg1 > 1.0):
+            #     arg1 = 1.0
             theta = math.acos( arg1 )
             # thetas.append(theta)
             x = math.cos(theta)*self.uwb75_range
             y = math.sin(theta)*self.uwb75_range
             positions[2]=np.array([x,y]) 
  
-            arg1 = (self.uwb5f_range**2 + self.uwb35_range**2 - self.uwb3f_range**2) / (2*self.uwb5f_range*self.uwb35_range)
-            if(arg1<-1.0):
-                arg1 = -1.0
-            elif (arg1 > 1.0):
-                arg1 = 1.0
+            arg1 = (self.uwb25_range**2 + self.uwb35_range**2 - self.uwb23_range**2) / (2*self.uwb25_range*self.uwb35_range)
+            # if(arg1<-1.0):
+            #     arg1 = -1.0
+            # elif (arg1 > 1.0):
+            #     arg1 = 1.0
             theta = math.acos( arg1 )
             # thetas.append(theta)
             x = math.cos(theta)*self.uwb35_range
             y = math.sin(theta)*self.uwb35_range
             positions[3]=np.array([x,y]) 
 
-            arg1 = (self.uwb5f_range**2 + self.uwb45_range**2 - self.uwb4f_range**2) / (2*self.uwb5f_range*self.uwb45_range)
-            if(arg1<-1.0):
-                arg1 = -1.0
-            elif (arg1 > 1.0):
-                arg1 = 1.0
+            arg1 = (self.uwb25_range**2 + self.uwb45_range**2 - self.uwb24_range**2) / (2*self.uwb25_range*self.uwb45_range)
+            # if(arg1<-1.0):
+            #     arg1 = -1.0
+            # elif (arg1 > 1.0):
+            #     arg1 = 1.0
             theta = math.acos( arg1 )
             # thetas.append(theta)
             x = math.cos(theta)*self.uwb45_range
@@ -288,9 +297,9 @@ class UWBTriangulation(Node) :
             self.pos_estimation.append([self.true_relative_pose_turtle01[0], self.true_relative_pose_turtle01[1],
                             self.true_relative_pose_turtle03[0], self.true_relative_pose_turtle03[1],
                             self.true_relative_pose_turtle04[0], self.true_relative_pose_turtle04[1], 
-                            positions[2][0], -positions[2][1],
-                            positions[3][0], -positions[3][1],
-                            positions[4][0], -positions[4][1]])
+                            -positions[2][1], -positions[2][0],
+                            -positions[3][1], -positions[3][0],
+                            -positions[4][1], -positions[4][0]])
 
         except ValueError:
             self.node.get_logger().error("math domain error")
