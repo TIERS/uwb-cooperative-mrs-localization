@@ -27,10 +27,10 @@ for i in range(12):
 
 # loal pos csv files
 pos_file_list = [
-    "/home/xianjia/Workspace/temp/results/results_11102022/triangulation/pos/pos_tri",
-    "/home/xianjia/Workspace/temp/results/results_11102022/pfilter/pos/pos_u",
-    "/home/xianjia/Workspace/temp/results/results_11102022/pfilter/pos/pos_u_v",
-    "/home/xianjia/Workspace/temp/results/results_11102022/pfilter/pos/pos_uv"
+    "/home/xianjia/Workspace/temp/results/results_12102022/triangulation/pos/pos_tri",
+    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u",
+    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u_v",
+    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_uv"
 ]
 
 ## get the file name of all above folders
@@ -61,7 +61,7 @@ for i in range(len(pos_name_list)):
     if i == 0:
         np.savetxt(pos_name_list[i], pos_list[i])
     else:
-        np.savetxt(pos_name_list[i], pos_list[i][1000:-30:,]) 
+        np.savetxt(pos_name_list[i], pos_list[i][1200:-30:,]) 
 
 
 # choose only the converged part of pf
@@ -70,12 +70,16 @@ for i in range(len(pos_list)):
     if i == 0:
         p_con_list.append(pos_list[i])
     else:
-        p_con_list.append(pos_list[i][1000:-30, :])
+        p_con_list.append(pos_list[i][1200:-30, :])
 
 # fix the translation
 for inx, p in enumerate(p_con_list):
     if inx == 0:
         continue
+        # ave = np.mean(p, axis=0)
+        # for i in range(6):
+        #     p[:,i+6] = np.subtract(p[:,i+6], ave[i+6] - ave[i])
+
     else:
         ave = np.mean(p, axis=0)
         for i in range(6):

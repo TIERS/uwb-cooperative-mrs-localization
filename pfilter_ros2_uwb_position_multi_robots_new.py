@@ -106,7 +106,7 @@ class UWBParticleFilter(Node) :
             namespace = '',
             parameters=[
                 ("weights_sigma", 1.2),
-                ("num_particles", 1200),
+                ("num_particles", 1500),
                 ("uwb_noise", 0.05),
                 ("resample_proportion", 0.01),
                 ("max_pos_delay", 0.2)
@@ -127,7 +127,7 @@ class UWBParticleFilter(Node) :
 
 
         # Create filter
-        self.prior_fn = lambda n: np.random.uniform(-8,2,(n,6))
+        self.prior_fn = lambda n: np.random.uniform(-8,2,(n,7))
         print(self.prior_fn)
         self.pf = ParticleFilter(
             prior_fn =              self.prior_fn, 
@@ -163,7 +163,7 @@ class UWBParticleFilter(Node) :
         self.odom_turtle03 = Odometry()
         self.odom_turtle04 = Odometry()
         # self.particle_odom = np.array([[0.01,0.01],[0.01,0.01], [0.01,0.01]])
-        self.particle_odom = np.array([0.01,0.01,0.01,0.01,0.01,0.01])
+        self.particle_odom = np.array([0.01,0.01,0.01,0.01,0.01,0.01,0.01])
         self.object_ori_pose_array = np.array([])
         self.object_turtle01_pose_array = np.array([])
         self.object_turtle03_pose_array = np.array([])
@@ -177,7 +177,7 @@ class UWBParticleFilter(Node) :
         self.pose_turtle04_sub = self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot4_cap/pose",  self.update_turtle04_opti_pos_cb, 10)
 
         # subscriber to odometry
-        self.odom_ori_sub      = self.create_subscription(Odometry, "/cali/turtle05/odom",  self.update_odometry_ori_cb, qos_profile=self.qos)
+        self.odom_ori_sub      = self.create_subscription(Odometry, "/cali/turtle05/odom",  self.update_odometry_ori_cb,      qos_profile=self.qos)
         self.odom_turtle01_sub = self.create_subscription(Odometry, "/cali/turtle01/odom",  self.update_odometry_turtle01_cb, qos_profile=self.qos)
         self.odom_turtle03_sub = self.create_subscription(Odometry, "/cali/turtle03/odom",  self.update_odometry_turtle03_cb, qos_profile=self.qos)
         self.odom_turtle04_sub = self.create_subscription(Odometry, "/cali/turtle04/odom",  self.update_odometry_turtle04_cb, qos_profile=self.qos)
@@ -196,6 +196,12 @@ class UWBParticleFilter(Node) :
         self.uwb_35_range_sub = self.create_subscription(Range, "/uwb/tof/n_3/n_5/distance", self.update_uwb35_range_cb, 10)
         self.uwb_45_range_sub = self.create_subscription(Range, "/uwb/tof/n_4/n_5/distance", self.update_uwb45_range_cb, 10)
         self.uwb_75_range_sub = self.create_subscription(Range, "/uwb/tof/n_7/n_5/distance", self.update_uwb75_range_cb, 10)
+
+        self.uwb_27_range_sub = self.create_subscription(Range, "/uwb/tof/n_2/n_7/distance", self.update_uwb27_range_cb, 10)
+        self.uwb_23_range_sub = self.create_subscription(Range, "/uwb/tof/n_2/n_3/distance", self.update_uwb23_range_cb, 10)
+        self.uwb_24_range_sub = self.create_subscription(Range, "/uwb/tof/n_2/n_4/distance", self.update_uwb24_range_cb, 10)
+        self.uwb_25_range_sub = self.create_subscription(Range, "/uwb/tof/n_2/n_5/distance", self.update_uwb25_range_cb, 10)
+
         self.publisher_turtle01_ = self.create_publisher(PoseStamped, '/pf_turtle01_pose', 10)
         self.publisher_turtle03_ = self.create_publisher(PoseStamped, '/pf_turtle03_pose', 10)
         self.publisher_turtle04_ = self.create_publisher(PoseStamped, '/pf_turtle04_pose', 10)
@@ -203,7 +209,7 @@ class UWBParticleFilter(Node) :
         # Wait to get some odometry
         sys.stdout.write("Waiting for odom data...")
         for _ in range(100) :
-            if self.pose_ori.header.stamp and self.pose_ori.header.stamp :
+            if self.odom_ori.header.stamp and self.odom_turtle01.header.stamp and self.odom_turtle03.header.stamp and self.odom_turtle03.header.stamp and self.odom_turtle04.header.stamp:
                 break
             sys.stdout.write("..")
             sys.stdout.flush()
@@ -222,12 +228,13 @@ class UWBParticleFilter(Node) :
         self.uwb35_range = 0.0
         self.uwb45_range = 0.0
         self.uwb75_range = 0.0
+        self.uwb27_range = 0.0
+        self.uwb23_range = 0.0
+        self.uwb24_range = 0.0
+        self.uwb25_range = 0.0
         self.true_relative_pose_turtle01 = np.array([.0,.0])
         self.true_relative_pose_turtle03 = np.array([.0,.0])
         self.true_relative_pose_turtle04 = np.array([.0,.0])
-        self.pos = PoseWithCovarianceStamped()
-        self.pos.header.stamp = Clock().now().to_msg()
-        self.pos.pose.pose.orientation.w = 1.0
 
         self.ranges = []
         self.errors = []
@@ -362,6 +369,31 @@ class UWBParticleFilter(Node) :
         '''
         self.uwb75_range = range.range - 0.32
 
+
+    def update_uwb27_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb27_range = range.range - 0.32
+
+    def update_uwb23_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb23_range = range.range - 0.32
+
+    def update_uwb24_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb24_range = range.range - 0.32
+
+    def update_uwb25_range_cb(self, range):
+        '''
+            Update range from UWB
+        '''
+        self.uwb25_range = range.range - 0.32
+
     def velocity(self, x) :
         '''
             Use VIO to update position
@@ -381,10 +413,16 @@ class UWBParticleFilter(Node) :
         '''
             Given (Nx2) matrix of positions,
             create N arrays of observations (just one for now)
-
-            x = [x1, y1, x2, y2, x3, y3]
-
-            y = [d23, d12, d13, d2, d3, d1]
+            T1, T3, T4, T2
+            U7, U3, U4, U2
+            x = [x1, y1, x2, y2, x3, y3, 0, y4]
+            y = [d12, d13, d14, d23, d24, d34, d1, d2, d3, d4]
+            y = [u37, u74, u72, u34, u23, u24, u75, u35, u45, u25]
+                0   ,   1,   2,   3,   4,   5,   6,   7,   8,  9
+            # y = [d23, d12, d13, d2, d3, d1]
+            # y = [d23, d12, d13, d14, d24, d34, d2, d3, d1, d4]
+            y = [u37, u74, u72, u34, u23, u24, u75, u35, u45, u25]
+            # d4 = x4
 
         '''  
         # y = np.linalg.norm(x, axis=1)
@@ -392,28 +430,37 @@ class UWBParticleFilter(Node) :
         y = []
 
         t = datetime.datetime.now()
-
+        
         for p in x :
+            p4 = np.array([0, p[6]])
             if args.fuse_group == 0 or args.fuse_group == 1:
                 y.append([
-                    np.linalg.norm(p[2:4] - p[4:6]),
                     np.linalg.norm(p[0:2] - p[2:4]),
                     np.linalg.norm(p[0:2] - p[4:6]),
+                    np.linalg.norm(p[0:2] - p4),
+                    np.linalg.norm(p[2:4] - p[4:6]),
+                    np.linalg.norm(p[2:4] - p4),
+                    np.linalg.norm(p[4:6] - p4),
+                    np.linalg.norm(p[0:2]),
                     np.linalg.norm(p[2:4]),
                     np.linalg.norm(p[4:6]),
-                    np.linalg.norm(p[0:2])
+                    np.linalg.norm(p4),
                 ])
             else:
                 y.append([
-                    np.linalg.norm(p[2:4] - p[4:6]),
                     np.linalg.norm(p[0:2] - p[2:4]),
                     np.linalg.norm(p[0:2] - p[4:6]),
+                    np.linalg.norm(p[0:2] - p4),
+                    np.linalg.norm(p[2:4] - p[4:6]),
+                    np.linalg.norm(p[2:4] - p4),
+                    np.linalg.norm(p[4:6] - p4),
+                    np.linalg.norm(p[0:2]),
                     np.linalg.norm(p[2:4]),
                     np.linalg.norm(p[4:6]),
-                    np.linalg.norm(p[0:2]),
+                    np.linalg.norm(p4), 
                     np.linalg.norm(p[0:2]),
                     np.linalg.norm(p[2:4]),
-                    np.linalg.norm(p[4:6])
+                    np.linalg.norm(p[4:6]),
             ])
 
         tt = datetime.datetime.now() - t
@@ -480,10 +527,19 @@ class UWBParticleFilter(Node) :
         # Get UWB range
 
         if args.fuse_group == 2:
-            new_meas = np.array([self.uwb37_range, self.uwb47_range, self.uwb35_range, self.uwb45_range, self.uwb75_range, self.uwb75_range, self.uwb35_range, self.uwb45_range])
+            new_meas = np.array([
+                self.uwb37_range, self.uwb47_range, self.uwb27_range, 
+                self.uwb34_range, self.uwb23_range, self.uwb24_range,
+                self.uwb75_range, self.uwb35_range, self.uwb45_range, self.uwb25_range,
+                self.uwb75_range, self.uwb35_range, self.uwb45_range
+                ])
 
         else:
-            new_meas = np.array([self.uwb34_range, self.uwb37_range, self.uwb47_range, self.uwb35_range, self.uwb45_range, self.uwb75_range])
+            new_meas = np.array([
+                self.uwb37_range, self.uwb47_range, self.uwb27_range, 
+                self.uwb34_range, self.uwb23_range, self.uwb24_range,
+                self.uwb75_range, self.uwb35_range, self.uwb45_range, self.uwb25_range
+            ])
 
         # self.get_logger().info("Real dist: {}".format(np.linalg.norm(self.true_relative_pose_turtle01)))
         # self.get_logger().info("UWB34 Meas: {}， UWB37 Meas: {}, UWB47 Meas: {}".format(self.uwb34_range, self.uwb37_range, self.uwb47_range))
@@ -495,13 +551,12 @@ class UWBParticleFilter(Node) :
         self.particle_odom[3] = self.odom_turtle03.pose.pose.position.y - self.last_particle_odom_turtle03.pose.pose.position.y - (self.odom_ori.pose.pose.position.y - self.last_particle_odom_ori.pose.pose.position.y)
         self.particle_odom[4] = self.odom_turtle04.pose.pose.position.x - self.last_particle_odom_turtle04.pose.pose.position.x - (self.odom_ori.pose.pose.position.x - self.last_particle_odom_ori.pose.pose.position.x)
         self.particle_odom[5] = self.odom_turtle04.pose.pose.position.y - self.last_particle_odom_turtle04.pose.pose.position.y - (self.odom_ori.pose.pose.position.y - self.last_particle_odom_ori.pose.pose.position.y)
-
+        self.particle_odom[6] = 0.0
         # print(f"self.pf.d: {self.pf.d}")
         self.last_particle_odom_turtle01 = self.odom_turtle01
         self.last_particle_odom_turtle03 = self.odom_turtle03
         self.last_particle_odom_turtle04 = self.odom_turtle04
         self.last_particle_odom_ori = self.odom_ori
-
 
         if args.fuse_group == 2 or args.fuse_group == 1:
             if self.object_turtle01_pose_array.size != 0 and self.object_ori_pose_array.size != 0:
@@ -509,9 +564,9 @@ class UWBParticleFilter(Node) :
                 if math.fabs(new_vision_meas -  self.uwb75_range) < 0.5:
                     self.get_logger().info("vision: {}, uwb range: {}, truth: {}".format(new_vision_meas, self.uwb75_range, np.linalg.norm(self.true_relative_pose_turtle01)))
                     if args.fuse_group == 1:
-                        new_meas[7] = new_vision_meas
+                        new_meas[6] = new_vision_meas
                     else:
-                        new_meas[11] = new_vision_meas
+                        new_meas[10] = new_vision_meas
                         # new_meas[1] = new_vision_meas
 
             if self.object_turtle03_pose_array.size != 0 and self.object_ori_pose_array.size != 0:
@@ -519,9 +574,9 @@ class UWBParticleFilter(Node) :
                 if math.fabs(new_vision_meas -  self.uwb35_range) < 0.5:
                     self.get_logger().info("vision: {}, uwb range: {}, truth: {}".format(new_vision_meas, self.uwb75_range, np.linalg.norm(self.true_relative_pose_turtle03)))
                     if args.fuse_group == 1:
-                        new_meas[9] = new_vision_meas
+                        new_meas[7] = new_vision_meas
                     else:
-                        new_meas[12] = new_vision_meas
+                        new_meas[11] = new_vision_meas
 
 
             if self.object_turtle04_pose_array.size != 0 and self.object_ori_pose_array.size != 0:
@@ -529,9 +584,9 @@ class UWBParticleFilter(Node) :
                 if math.fabs(new_vision_meas -  self.uwb45_range) < 0.5:
                     self.get_logger().info("vision: {}, uwb range: {}, truth: {}".format(new_vision_meas, self.uwb45_range, np.linalg.norm(self.true_relative_pose_turtle04)))
                     if args.fuse_group == 1:
-                        new_meas[10] = new_vision_meas
+                        new_meas[8] = new_vision_meas
                     else:
-                        new_meas[13] = new_vision_meas
+                        new_meas[12] = new_vision_meas
 
         self.pf.update(observed=new_meas)
         
