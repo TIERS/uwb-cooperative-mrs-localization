@@ -1,0 +1,87 @@
+import os
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+import tikzplotlib as tikz
+
+colors = list(np.array([
+    [235, 64, 52, 80],
+    [162, 52, 235, 80],
+    [44,127,184, 80],
+    [127,205,187, 80],
+    [237,248,177, 80],
+    [43,140,190, 80],
+    [166,189,219, 80],
+    [49,163,84, 80],
+    [197,27,138, 80]
+])/256)
+
+pos_u   = "/home/xianjia/Workspace/temp/results/results_11102022/triangulation/pos/pos_tri"
+
+# my_data = np.genfromtxt('my_file.csv', delimiter=',')
+
+f_u = []
+for (dirpath, dirnames, filenames) in os.walk(pos_u):
+    f_u.extend(filenames)
+
+d_u = []
+a_u = np.zeros(shape=np.genfromtxt(os.path.join(pos_u,f_u[0]), delimiter=',').shape)
+c_u = 0
+for u in f_u:
+    n_v = np.genfromtxt(os.path.join(pos_u,u), delimiter=',')
+    if n_v.shape == a_u.shape:
+        a_u += n_v
+        c_u += 1
+a_u /= c_u
+
+# save the poses
+# print(f"number:{c_u},{c_u_v},{c_uv}")
+np.savetxt("tri_u.csv", a_u)
+# np.savetxt("new_u_v.csv", a_u_v[800:-100])
+# np.savetxt("new_uv.csv", a_uv[800:-100])
+
+# print(a_u[800:-100][0:1].shape)
+
+r1_u_e_x = np.fabs(a_u[:,6] - a_u[:,0])
+r1_u_e_y = np.fabs(a_u[:,7] - a_u[:,1])
+r2_u_e_x = np.fabs(a_u[:,8] - a_u[:,2])
+r2_u_e_y = np.fabs(a_u[:,9] - a_u[:,3])
+r3_u_e_x = np.fabs(a_u[:,10] - a_u[:,4])
+r3_u_e_y = np.fabs(a_u[:,11] - a_u[:,5])
+
+
+# color_ls = ['b+', 'r+', 'g+', 'c+', 'm', 'y', 'k', 'w', 'r'] 
+color_ls =     ['b', 'r', 'g', 'c', 'm', 'b', 'r', 'g', '#1f77b4', 'b', 'r', 'g', 'c', 'm', 'b', 'r', 'g', '#1f77b4'] 
+linestyle_ls = ['*', 'v', '^', 's', 'o', 'D', 'H', '8', 'p', '*', 'v', '^', 's', 'o', 'D', 'H', '8', 'p']
+x_cap = ["robot01_tri", "robot02_tri", "robot03_tri"]
+x_height= ["axis_x_error", "axis_y_error"]
+
+
+fig, ax = plt.subplots()
+plt.title("State Estimation Error of Triangulations on UWB Ranges")
+
+all_gs = [
+          [r1_u_e_x,  r2_u_e_x,  r3_u_e_x], 
+          [r1_u_e_y,  r2_u_e_y,  r3_u_e_y]
+         ]
+num = 2
+
+for i in range(len(all_gs)):
+    data = all_gs[i]
+    pos = [x for x in range(10*i, 10*i + num*3, 2)]
+    print(len(data), len(pos))
+
+    bx = ax.boxplot(data, positions = pos, notch=True, showfliers=False )
+    print(f"bx size: {len(bx['boxes'])}")
+    for idx, box in enumerate(bx['boxes']):
+        box.set(color= colors[int(idx/(num/2))], linewidth=5)
+        ax.legend( bx["boxes"], [ "{}".format(m) for m in x_cap ], loc='upper left')
+        # plt.xticks(ticks=[x for x in range(20*i, 20*i + 18, 6)],labels =["{}".format(val) for val in ["x", "y", "z"]])
+plt.xticks(ticks=[10 * x + 2  for x in range(2)], labels=["{}".format(x_height[i]) for i in range(len(x_height))])
+
+# FILENAME = "real_mf_boxplot" 
+# plt.savefig('{}.png'.format(FILENAME))   
+# tikz.save("{}.tex".format(FILENAME)) 
+plt.show()
+# plt.yscale('log')
+# plt.legend()
