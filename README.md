@@ -157,8 +157,9 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 
 ## TODO
 - [ ] add polyfit uwb bia value to the data input.
-- [ ] run single pf in each robot.
-- [ ] have a centeralized pf. 
-- [ ] add feedback data from centeralized pf to local pf.
+- [x] run single pf in each robot.
+- [x] have a centeralized pf. 
 - [ ] improve visualization of results
 - [x] add triangulation code and results.
+- [ ] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
+- [ ] run navigation based on the uwb pf localization
