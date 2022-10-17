@@ -26,11 +26,17 @@ for i in range(12):
     colors.append(mcolors.CSS4_COLORS[names[i]])
 
 # loal pos csv files
+# pos_file_list = [
+#     "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/triangulation/pos/pos_tri",
+#     "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/pfilter/pos/pos_u",
+#     # "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/pfilter/pos/pos_u_v",
+#     "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/pfilter/pos/pos_uv"
+# ]
 pos_file_list = [
-    "/home/xianjia/Workspace/temp/results/results_12102022/triangulation/pos/pos_tri",
-    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u",
-    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u_v",
-    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_uv"
+    "/home/xianjia/Workspace/temp/results/results_17102022/triangulation/pos/pos_tri",
+    "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_u",
+    # "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_u_v",
+    "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_uv"
 ]
 
 ## get the file name of all above folders
@@ -56,7 +62,8 @@ for inx, fs in enumerate(files):
     pos_list.append(f_v)
 
 # save average pos of different rounds in CSVs
-pos_name_list =["original_u_t.csv","original_u.csv","original_u_v.csv","original_uv.csv"] 
+# pos_name_list =["original_u_t.csv","original_u.csv","original_u_v.csv","original_uv.csv"] 
+pos_name_list =["original_u_t.csv","original_u.csv","original_uv.csv"] 
 for i in range(len(pos_name_list)):
     if i == 0:
         np.savetxt(pos_name_list[i], pos_list[i])
@@ -86,7 +93,7 @@ for inx, p in enumerate(p_con_list):
             p[:,i+6] = np.subtract(p[:,i+6], ave[i+6] - ave[i])
 
 # save the translation fixed poses
-pos_name_list =["new_u_t.csv","new_u.csv","new_u_v.csv","new_uv.csv"] 
+pos_name_list =["new_u_t.csv","new_u.csv","new_uv.csv"] 
 for i in range(len(pos_name_list)):
     if i == 0:
         np.savetxt(pos_name_list[i], p_con_list[i])
@@ -118,7 +125,7 @@ linestyle_ls = ['*', 'v', '^', 's', 'o', 'D', 'H', '8', 'p', '*', 'v', '^', 's',
 #          "robot03_u_t", "robot03_u", "robot03_u_v", "robot03_uv"]
 x_cap = ["robot01_u_t", "robot02_u_t", "robot03_u_t",
         "robot01_u", " robot02_u",  "robot03_u",
-        "robot01_u_v", "robot02_u_v", "robot03_u_v", 
+        # "robot01_u_v", "robot02_u_v", "robot03_u_v", 
         "robot01_uv", "robot02_uv", "robot03_uv"]
 x_height= ["axis_x_error", "axis_y_error"]
 
@@ -139,8 +146,8 @@ num = 2
 
 for i in range(len(all_gs)):
     data = all_gs[i]
-    pos = [x for x in range(30*i, 30*i + num*12, 2)]
-    # print(len(data), len(pos))
+    pos = [x for x in range(30*i, 30*i + num*9, 2)]
+    print(len(data), len(pos))
 
     bx = ax.boxplot(data, positions = pos, notch=True, showfliers=False )
     # print(f"bx size: {len(bx['boxes'])}")

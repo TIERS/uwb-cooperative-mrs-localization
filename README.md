@@ -1,3 +1,24 @@
+<style>
+ 
+.container {
+  width: 80%;
+  background-color: #ddd;
+}
+ 
+.skills {
+  text-align: right;
+  padding-right: 20px;
+  line-height: 40px;
+  color: white;
+}
+'''
+.html {width: 80%; background-color: #2196F3;}
+.css {width: 80%; background-color: #2196F3;}
+.js {width: 65%; background-color: #f44336;}
+.php {width: 60%; background-color: #808080;}
+'''
+</style>
+ 
 # uwb_ranging_refine_with_spatial_detection
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
@@ -151,7 +172,6 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 :-------------------------:|:-------------------------: |:-------------------------:
 ![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
 
-##### Federated PF state estimation
 ###### Errors
 ![](./demos/centralized_pf_xy_error.png)
 
@@ -159,7 +179,13 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 - [ ] add polyfit uwb bia value to the data input.
 - [x] run single pf in each robot.
 - [x] have a centeralized pf. 
-- [ ] improve visualization of results
+- [ ] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
 - [x] add triangulation code and results.
-- [ ] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
-- [ ] run navigation based on the uwb pf localization
+- [x] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
+- [ ] calibrate the odom data for collected data on 13th Oct
+- [ ] improve the codes.
+![70%](https://progress-bar.dev/70)
+- [ ] modify the approaches of adding vision spatial detections. (ranges)
+![90%](https://progress-bar.dev/90)
+- [ ] how to add spatial detection coordinates into the pf (discussion needed)
+- [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
