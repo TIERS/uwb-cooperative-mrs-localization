@@ -1,24 +1,3 @@
-<style>
- 
-.container {
-  width: 80%;
-  background-color: #ddd;
-}
- 
-.skills {
-  text-align: right;
-  padding-right: 20px;
-  line-height: 40px;
-  color: white;
-}
-'''
-.html {width: 80%; background-color: #2196F3;}
-.css {width: 80%; background-color: #2196F3;}
-.js {width: 65%; background-color: #f44336;}
-.php {width: 60%; background-color: #808080;}
-'''
-</style>
- 
 # uwb_ranging_refine_with_spatial_detection
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
