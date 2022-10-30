@@ -143,7 +143,7 @@ script/errors/
 #### Trajectory estimation
 Best results for now.
 ##### Triangulation state estimation
-
+<!-- ![](./demos/Figure_2.png) -->
 
 ##### Centralized PF state estimation
 ###### Trajectories
@@ -166,5 +166,6 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 ![70%](https://progress-bar.dev/70)
 - [ ] modify the approaches of adding vision spatial detections. (ranges)
 ![90%](https://progress-bar.dev/90)
+- [ ] increase the pf processing frequency to check the performance
 - [ ] how to add spatial detection coordinates into the pf (discussion needed)
 - [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
