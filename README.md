@@ -152,20 +152,20 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 ![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
 
 ###### Errors
-![](./demos/centralized_pf_xy_error.png)
+![](./demos/ape.png)
 
 ## TODO
 - [ ] add polyfit uwb bia value to the data input.
 - [x] run single pf in each robot.
 - [x] have a centeralized pf. 
 - [ ] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
+![90%](https://progress-bar.dev/90)
 - [x] add triangulation code and results.
 - [x] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
-- [ ] calibrate the odom data for collected data on 13th Oct
-- [ ] improve the codes.
-![70%](https://progress-bar.dev/70)
-- [ ] modify the approaches of adding vision spatial detections. (ranges)
-![90%](https://progress-bar.dev/90)
-- [ ] increase the pf processing frequency to check the performance
-- [ ] how to add spatial detection coordinates into the pf (discussion needed)
+- [x] calibrate the odom data for collected data on 13th Oct
+- [x] improve the codes.
+- [x] modify the approaches of adding vision spatial detections. (ranges)
+- [x] increase the pf processing frequency to check the performance
+- [x] how to add spatial detection coordinates into the pf (discussion needed)
+- [x] set the pf initial distribution with the first odometry data
 - [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
