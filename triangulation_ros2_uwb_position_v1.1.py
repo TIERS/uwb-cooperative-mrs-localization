@@ -35,7 +35,7 @@ uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5),
 #  get parameters from terminal
 def parse_args():
     parser = argparse.ArgumentParser(description='Options for triangulations to calculate the relative position of robots based on UWB rangessss')
-    parser.add_argument('--poses_save', type=bool, default=True, help='choose to save the estimated poses with triangulation')
+    parser.add_argument('--poses_save', type=bool, default=False, help='choose to save the estimated poses with triangulation')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
     return args
@@ -149,7 +149,7 @@ class UWBTriangulation(Node) :
         positions = [np.zeros(2) for _ in range(5)] 
         positions[0] = np.array([0, 0])
         positions[1] = np.array([self.uwb_ranges[9], 0])
-# uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
+        # uwb_pair   = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
         try:
             arg1 = (self.uwb_ranges[9]**2 + self.uwb_ranges[6]**2 - self.uwb_ranges[2]**2) / (2*self.uwb_ranges[9]*self.uwb_ranges[6])
             theta = math.acos( arg1 )
@@ -177,16 +177,16 @@ class UWBTriangulation(Node) :
             self.pos_estimation.append([self.true_relative_poses[0][0], self.true_relative_poses[0][1],
                             self.true_relative_poses[1][0], self.true_relative_poses[1][1],
                             self.true_relative_poses[2][0], self.true_relative_poses[2][1], 
-                            -positions[2][1], -positions[2][0],
-                            -positions[3][1], -positions[3][0],
-                            -positions[4][1], -positions[4][0]])
+                            -positions[2][1],     -positions[2][0], 
+                            -positions[3][1],     -positions[3][0], 
+                            -positions[4][1],     -positions[4][0], ])
             # publish pf relative pose
             for i in range(len(turtles[1:])):
                 relative_pose = PoseStamped()
                 relative_pose.header.frame_id = "base_link"
                 relative_pose.header.stamp = self.node.get_clock().now().to_msg()
-                relative_pose.pose.position.x = -positions[(i+2)][1]
-                relative_pose.pose.position.y = -positions[(i+2)][0]
+                relative_pose.pose.position.x = positions[(i+2)][1]
+                relative_pose.pose.position.y = positions[(i+2)][0]
                 relative_pose.pose.position.z = 0.0
                 relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation
                 self.relative_pose_publishers[i].publish(relative_pose) 
