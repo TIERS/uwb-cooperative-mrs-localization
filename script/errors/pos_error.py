@@ -33,10 +33,10 @@ for i in range(12):
 #     "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/pfilter/pos/pos_uv"
 # ]
 pos_file_list = [
-    "/home/xianjia/Workspace/temp/results/results_17102022/triangulation/pos/pos_tri",
-    "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_u",
-    # "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_u_v",
-    "/home/xianjia/Workspace/temp/results/results_17102022/pfilter/pos/pos_uv"
+    "/home/xianjia/Workspace/temp/results/results_12102022/triangulation/pos/pos_tri",
+    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u",
+    # "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_u_v",
+    "/home/xianjia/Workspace/temp/results/results_12102022/pfilter/pos/pos_uv"
 ]
 
 ## get the file name of all above folders
@@ -99,6 +99,12 @@ for i in range(len(pos_name_list)):
         np.savetxt(pos_name_list[i], p_con_list[i])
     else:
         np.savetxt(pos_name_list[i], p_con_list[i]) 
+
+
+
+
+
+
 
 # cal the errors
 errors = []

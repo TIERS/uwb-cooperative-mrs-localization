@@ -82,20 +82,3 @@ ax.get_yaxis().tick_left()
 # show plot
 plt.show()
 
-
-
-# x = np.arange(errors_uwb.shape[0])
-# plt.plot(x, errors_uwb, label='only uwb ranges')
-
-# y = np.arange(errors_u.shape[0])
-# plt.plot(y, errors_u, label='uwb ranges with pf')
-
-# z = np.arange(errors_u_v.shape[0])
-# plt.plot(z, errors_u_v, label='uwb ranges integrating spatial (one meas) with pf')
-
-# j = np.arange(errors_uv.shape[0])
-# plt.plot(j, errors_uv, label='uwb ranges integrating spatial (two meas) with pf')
-
-# plt.legend()
-# plt.show()
-# print(errors[0])
