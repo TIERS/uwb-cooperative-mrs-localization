@@ -41,7 +41,7 @@ spatial_dict    = {sp:[] for sp in spatial_pair}
 def parse_args():
     parser = argparse.ArgumentParser(description='Options to control relative localization with only UWB, assisit with Vision, and all if vision available')
     parser.add_argument('--poses_save', type=bool, default=True, help='choose to save the estimated poses with pf')
-    parser.add_argument('--images_save', type=bool, default=False, help='choose to save the images with pf')
+    parser.add_argument('--images_save', type=bool, default=True, help='choose to save the images with pf')
     parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: with vision replace new measurement, 2: uwb and vision together')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
@@ -102,7 +102,9 @@ class UWBParticleFilter(Node) :
                              self.resample_proportion))
 
         # all varibles 
-        self.counter = 0
+        self.num_vision             = 0
+        self.num_states             = 6
+        self.counter                = 0
         self.vis_flag               = False
         self.uwb_ranges             = [0.0 for _ in uwb_pair]
         self.turtles_mocaps         = [np.zeros(2) for _ in turtles]
@@ -112,10 +114,8 @@ class UWBParticleFilter(Node) :
         self.spatial_objects        = {t:np.array([]) for t in turtles}
         self.true_relative_poses    = [np.zeros(2) for _ in range(1,len(turtles))]
         self.relative_poses         = [np.zeros(2) for _ in range(1,len(turtles))]
-        self.odoms_init             = np.array([0.001,0.001,0.001,0.001,0.001,0.001])
-        self.particle_odom          = np.array([0.001,0.001,0.001,0.001,0.001,0.001]) #,0.001,0.001
-        # self.odoms_init             = np.array([0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001])
-        # self.particle_odom          = np.array([0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001]) #,0.001,0.001
+        self.particle_odom          = np.array([0.001]*self.num_states)
+        self.prior_init             = np.array([0.001]*self.num_states)
         self.pf_init_flag           = False
         self.fake_odom              = [np.zeros(2) for _ in turtles]
         self.fake_last_odom         = [np.zeros(2) for _ in turtles]
@@ -148,22 +148,9 @@ class UWBParticleFilter(Node) :
         # pf relative poses publishers
         self.real_pose_publishers = [self.create_publisher(PoseStamped, '/real_turtle0{}_pose'.format(t), 10) for t in turtles]
         self.relative_pose_publishers = [self.create_publisher(PoseStamped, '/pf_turtle0{}_pose'.format(t), 10) for t in turtles[1:]]
+        self.relative_pose_publishers.append(self.create_publisher(PoseStamped, '/pf_turtle02_pose', 10))
 
         self.fake_odom_publishers = [self.create_publisher(Odometry, '/fake_t0{}_odom'.format(t), 10) for t in turtles]
-
-        # start = time.time()
-        # Wait to get some odometry
-        # sys.stdout.write("Waiting for odom data...\n")
-        
-        # for _ in range(1000) :
-        #     print(self.turtles_odoms_flag)
-        #     if all(self.turtles_odoms_flag):
-        #         break
-        #     sys.stdout.write("..")
-        #     sys.stdout.flush()
-        #     time.sleep(0.1)
-        # self.get_logger().info("Odometry locked. Current odom\n")
-        # print(f"time cost: {time.time() - start}"
 
         self.pos_estimation = []
         
@@ -241,6 +228,8 @@ class UWBParticleFilter(Node) :
         y = []
 
         t = datetime.datetime.now()
+
+        p2 = np.array([0.0, -7.0])
         
         if args.fuse_group == 2 and self.vis_flag:
             self.vis_flag = False
@@ -250,14 +239,14 @@ class UWBParticleFilter(Node) :
                 tmp = [
                     np.linalg.norm(p[0:2] - p[2:4]),
                     np.linalg.norm(p[0:2] - p[4:6]),
-                    # np.linalg.norm(p[0:2] - p[6:8]),
+                    np.linalg.norm(p[0:2] - p2),
                     np.linalg.norm(p[2:4] - p[4:6]),
-                    # np.linalg.norm(p[2:4] - p[6:8]),
-                    # np.linalg.norm(p[4:6] - p[6:8]),
+                    np.linalg.norm(p[2:4] - p2),
+                    np.linalg.norm(p[4:6] - p2),
                     np.linalg.norm(p[0:2]),
                     np.linalg.norm(p[2:4]),
                     np.linalg.norm(p[4:6]),
-                    # np.linalg.norm(p[6:8]),
+                    np.linalg.norm(p2),
                 ]   
                 # [('5', '1'), ('5', '3'), ('5', '4'), ('1', '3'), ('1', '4'), ('3', '4')]
                 for sp in range(len(sp_temp)):
@@ -269,19 +258,16 @@ class UWBParticleFilter(Node) :
                         else:
                             if sp == 3:
                                 for _ in sp_temp[3]:
-                                    # tmp.append(np.linalg.norm(p[0:2] - p[2:4]))
                                     tmp.append(p[2] - p[0])
                                     tmp.append(p[3] - p[1])
 
                             if sp == 4:
                                 for _ in sp_temp[4]:
-                                    # tmp.append(np.linalg.norm(p[0:2] - p[4:6]))
                                     tmp.append(p[4] - p[0])
                                     tmp.append(p[5] - p[1])
 
                             if sp == 5:
                                 for _ in sp_temp[5]:
-                                    # tmp.append(np.linalg.norm(p[2:4] - p[4:6]))
                                     tmp.append(p[4] - p[2])
                                     tmp.append(p[5] - p[3])
                 y.append(tmp)
@@ -291,14 +277,14 @@ class UWBParticleFilter(Node) :
                 tmp = [
                     np.linalg.norm(p[0:2] - p[2:4]),
                     np.linalg.norm(p[0:2] - p[4:6]),
-                    # np.linalg.norm(p[0:2] - p[6:8]),
+                    np.linalg.norm(p[0:2] - p2),
                     np.linalg.norm(p[2:4] - p[4:6]),
-                    # np.linalg.norm(p[2:4] - p[6:8]),
-                    # np.linalg.norm(p[4:6] - p[6:8]),
+                    np.linalg.norm(p[2:4] - p2),
+                    np.linalg.norm(p[4:6] - p2),
                     np.linalg.norm(p[0:2]),
                     np.linalg.norm(p[2:4]),
                     np.linalg.norm(p[4:6]),
-                    # np.linalg.norm(p[6:8]),
+                    np.linalg.norm(p2),
                 ]
                 y.append(tmp)
 
@@ -318,7 +304,7 @@ class UWBParticleFilter(Node) :
     def fake_odom_fun(self):
         # self.get_logger().info("Set Fake Odom.")
         for t, t_cap in enumerate(self.turtles_mocaps):
-            mean, std = 0.0, 0.03
+            mean, std = 0.0, 0.05
             self.fake_odom[t][0] = t_cap[0] + np.random.normal(mean, std)
             self.fake_odom[t][1] = t_cap[1] + np.random.normal(mean, std)
             temp_odom = Odometry()
@@ -333,12 +319,10 @@ class UWBParticleFilter(Node) :
         '''
         if all(self.turtles_odoms_flag) and  not self.pf_init_flag:
             # Create filter
-            for t, to in enumerate(self.turtles_odoms[1:]):
-                self.odoms_init[2*t] = to.pose.pose.position.x
-                self.odoms_init[2*t + 1] = to.pose.pose.position.y
-            print(self.odoms_init)
-            priors = self.turtles_mocaps[1:] - np.array([self.turtles_mocaps[0][0], self.turtles_mocaps[0][1]])
-            self.prior_fn = lambda n: priors.flatten() + np.random.normal(0,0.2,(n,6)) #np.random.uniform(-8,8,(n,8))+self.odoms_init
+            print(self.turtles_mocaps)
+            self.prior_init = self.turtles_mocaps[1:] - np.array([self.turtles_mocaps[0][0], self.turtles_mocaps[0][1]])
+            print(self.prior_init.flatten())
+            self.prior_fn = lambda n: self.prior_init.flatten() + np.random.normal(0,0.2,(n,self.num_states)) #np.random.uniform(-8,8,(n,8))+self.odoms_init
 
             self.pf = ParticleFilter(
                 prior_fn =              self.prior_fn, 
@@ -362,6 +346,7 @@ class UWBParticleFilter(Node) :
             # TODO: check uwb measurements
             ## check vision measurements
             vis_meas_list = []
+            # print("******************************")
             if args.fuse_group == 2 or args.fuse_group == 1:
                 for i, p in enumerate(spatial_pair):
                     spatial_dict[p].clear()
@@ -369,46 +354,37 @@ class UWBParticleFilter(Node) :
                         for obj0 in self.spatial_objects[p[0]]:
                             for obj1 in self.spatial_objects[p[1]]:
                                 vis_meas = self.update_range_from_object_pose(obj0, obj1)
-                                if math.fabs(vis_meas -  self.uwb_ranges[spatial_uwb[p]]) < 0.5:
+                                if math.fabs(vis_meas -  self.uwb_ranges[spatial_uwb[p]]) < 0.10:
+                                    self.num_vision+=1
                                     self.vis_flag = True
                                     spatial_dict[p].extend([[obj0, obj1]])
-                                    vis_meas_list.append(-obj1.position.x + obj0.position.x)
-                                    vis_meas_list.append(-obj1.position.y + obj0.position.y)
+                                    # vis_meas_list.append(vis_meas)
+                                    vis_meas_list.append(obj1.position.x - obj0.position.x)
+                                    vis_meas_list.append(obj1.position.y - obj0.position.y)
             if args.fuse_group == 2 and len(vis_meas_list) > 0:
-                # new_meas = np.append(self.uwb_ranges, [vis_meas_list])
-                new_meas = np.append([self.uwb_ranges[0], self.uwb_ranges[1], self.uwb_ranges[3], self.uwb_ranges[6], self.uwb_ranges[7], self.uwb_ranges[8]], [vis_meas_list])
+                new_meas = np.append(self.uwb_ranges, [vis_meas_list])
+                # new_meas = np.append([self.uwb_ranges[0], self.uwb_ranges[1], self.uwb_ranges[3], self.uwb_ranges[6], self.uwb_ranges[7], self.uwb_ranges[8]], [vis_meas_list])
             else:
-                # new_meas = np.array(self.uwb_ranges)
-                new_meas = np.array([self.uwb_ranges[0], self.uwb_ranges[1], self.uwb_ranges[3], self.uwb_ranges[6], self.uwb_ranges[7], self.uwb_ranges[8]])
+                new_meas = np.array(self.uwb_ranges)
+                # new_meas = np.array([self.uwb_ranges[0], self.uwb_ranges[1], self.uwb_ranges[3], self.uwb_ranges[6], self.uwb_ranges[7], self.uwb_ranges[8]])
 
-            # set particle odometries
-            # for i in range(1, len(turtles)):
-            #     self.particle_odom[2*(i-1)] = self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
-            #                             (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x)
-            #     self.particle_odom[2*(i-1)+1] = self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
-            #                             (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y)
+            if len(vis_meas_list) > 0:
+                print(f"only uwb: {self.uwb_ranges}")
+                print(f"vision  : {vis_meas_list}")
+                print(f"new meas: {new_meas}")
+                print("******************************")
+                
             for i in range(1, len(turtles)):
                 self.particle_odom[2*(i-1)] = (self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
                                         (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x))
                 self.particle_odom[2*(i-1)+1] = (self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
                                         (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y))
             self.last_turtles_odoms = np.copy(self.turtles_odoms)
-            # self.particle_odom[6] = 0.0
-            # self.particle_odom[7] = 0.0
-            
 
-            # for i in range(1, len(turtles)):
-            #     self.particle_odom[2*(i-1)] = self.fake_odom[i][0] - self.fake_last_odom[i][0] - \
-            #                             (self.fake_odom[0][0] - self.fake_last_odom[0][0])
-            #     self.particle_odom[2*(i-1)+1] = self.fake_odom[i][1] - self.fake_last_odom[i][1] - \
-            #                             (self.fake_odom[0][1] - self.fake_last_odom[0][1])
-            # self.fake_last_odom = np.copy(self.fake_odom)
-            # self.particle_odom[6] = 0
-            # self.particle_odom[7] = 0
-            print("---------------")
             self.pf.update(observed=new_meas)
-            if self.pf.cov_state[0][0] > 0.5 or self.pf.cov_state[0][1] > 0.5 :
-                self.get_logger().warn("PF covariance too high with covx={} and covy={}".format(self.pf.cov_state[0], self.pf.cov_state[1]))
+            for i in range(self.num_states) :
+                if self.pf.cov_state[i][0] > 0.3 or self.pf.cov_state[i][1] > 0.3 :
+                    self.get_logger().warn("PF covariance too high for Turtle {} with covx={} and covy={}".format(i, self.pf.cov_state[i][0], self.pf.cov_state[i][1]))
 
             # publish pf relative pose
             for i in range(len(turtles[1:])):
@@ -468,6 +444,7 @@ class UWBParticleFilter(Node) :
     def __del__(self):
         # body of destructor
         self.get_logger().info("PF ends and Saving Results.")
+        print(f"num of vision: {self.num_vision}")
         if args.poses_save: 
             np.savetxt(pos_file, 
             self.pos_estimation,
@@ -505,3 +482,30 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
+# self.particle_odom[6] = 0.0
+# self.particle_odom[7] = 0.0
+
+
+# for i in range(1, len(turtles)):
+#     self.particle_odom[2*(i-1)] = self.fake_odom[i][0] - self.fake_last_odom[i][0] - \
+#                             (self.fake_odom[0][0] - self.fake_last_odom[0][0])
+#     self.particle_odom[2*(i-1)+1] = self.fake_odom[i][1] - self.fake_last_odom[i][1] - \
+#                             (self.fake_odom[0][1] - self.fake_last_odom[0][1])
+# self.fake_last_odom = np.copy(self.fake_odom)
+# self.particle_odom[6] = 0
+# self.particle_odom[7] = 0
+
+# start = time.time()
+# Wait to get some odometry
+# sys.stdout.write("Waiting for odom data...\n")
+
+# for _ in range(1000) :
+#     print(self.turtles_odoms_flag)
+#     if all(self.turtles_odoms_flag):
+#         break
+#     sys.stdout.write("..")
+#     sys.stdout.flush()
+#     time.sleep(0.1)
+# self.get_logger().info("Odometry locked. Current odom\n")
+# print(f"time cost: {time.time() - start}"

@@ -170,7 +170,8 @@ class UWBParticleFilter(Node) :
         
     def uwb_range_cb(self, i, range):
         self.uwb_ranges[i] = range.range - 0.32
-        print("UWB range from {} to {} ---- {}".format(uwb_pair[i][0], uwb_pair[i][1], range.range))
+        # print("UWB range from {} to {} ---- {}".format(uwb_pair[i][0], uwb_pair[i][1], range.range))
+
 
     def create_mocap_pose_cb(self, i):
         return lambda pos : self.mocap_pose_cb(i, pos)

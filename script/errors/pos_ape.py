@@ -4,15 +4,15 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 import tikzplotlib as tikz
-# import pandas as pd
-# import seaborn as sns
-# import os
-# import matplotlib.pyplot as plt
-# #sns.set(style="darkgrid")
-# #sns.set(style="whitegrid")
-# #sns.set_style("white")
-# sns.set(style="whitegrid",font_scale=2)
-# import matplotlib.collections as clt
+import pandas as pd
+import seaborn as sns
+import os
+import matplotlib.pyplot as plt
+#sns.set(style="darkgrid")
+#sns.set(style="whitegrid")
+#sns.set_style("white")
+sns.set(style="whitegrid",font_scale=2)
+import matplotlib.collections as clt
 
 
 import ptitprince as pt
@@ -39,7 +39,7 @@ colors = list(np.array([
 # for i in range(12):
 #     colors.append(mcolors.CSS4_COLORS[names[i]])
 
-folder_name = "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/ape/old/05"
+folder_name = "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/ape/"
 
 ## get the file name of all above folders
 files = [
@@ -74,19 +74,27 @@ all_gs = [
           [pos_list[2][:], pos_list[5][:], pos_list[8][:]],
          ]
 
+# df = pd.DataFrame(all_gs, columns = ['Column_A','Column_B','Column_C'], index = ['Item_1', 'Item_2'])
+
 num = 3
 
+# https://towardsdatascience.com/making-it-rain-with-raincloud-plots-496c39a2756f
 for i in range(len(all_gs)):
     data = all_gs[i]
-    pos = [x for x in range(20*i, 20*i + num*3, 3)]
-    print(len(data), len(pos))
+    print(data)
+    # pos = [x for x in range(20*i, 20*i + num*3, 3)]
+    # print(len(data), len(pos))
+    pal = sns.color_palette(n_colors=1)
+    ax=pt.half_violinplot(x='x', y='y', data = data, palette = pal, bw = .2, cut = 0.,
+                      scale = "area", width = .6, inner = None)
 
-    bx = ax.boxplot(data, positions = pos, notch=True, showfliers=False, autorange=True )
+    ax=sns.stripplot(x='x', y='y', data = data, palette = pal)
+    # bx = ax.boxplot(data, positions = pos, notch=True, showfliers=False, autorange=True )
 
-    for idx, box in enumerate(bx['boxes']):
-        # print(int(idx/3))
-        box.set(color= colors[int(idx)], linewidth=5)
-        ax.legend( bx["boxes"], [ "{}".format(m) for m in x_cap ], loc='upper left')
+    # for idx, box in enumerate(bx['boxes']):
+    #     # print(int(idx/3))
+    #     box.set(color= colors[int(idx)], linewidth=5)
+    #     ax.legend( bx["boxes"], [ "{}".format(m) for m in x_cap ], loc='upper left')
         # plt.xticks(ticks=[x for x in range(30*i, 30*i + 18, 6)],labels =["{}".format(val) for val in ["x", "y", "z"]])
 # plt.ylim([-0.1, 1.0])
 plt.xticks(ticks=[20 * x + 3  for x in range(3)], labels=["{}".format(x_height[i]) for i in range(len(x_height))])

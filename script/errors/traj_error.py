@@ -25,16 +25,16 @@ from evo.core import metrics
 
 from rosbags.rosbag2 import Reader as Rosbag2Reader
 
-robot_id = 4
+robot_id = 1
 way_id = 1
 # file = 'tri'
-# file = 'u'
-file = "uv"
+file = 'u'
+# file = "uv"
 
-with Rosbag2Reader("/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/result_bags/cali_4robots_data_04/result_bag_2_0") as reader:
+with Rosbag2Reader("/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/result_bags/4robots_data_07/result_bag_0_0") as reader:
     if robot_id == 1:
         traj_ref = file_interface.read_bag_trajectory(reader, "/real_turtle01_pose")
-        if way_id == 0:
+        if way_id == 0: 
             traj_est = file_interface.read_bag_trajectory(reader, "/tri_turtle01_pose")
         if way_id == 1:
             traj_est = file_interface.read_bag_trajectory(reader, "/pf_turtle01_pose")

@@ -185,8 +185,8 @@ class UWBTriangulation(Node) :
                 relative_pose = PoseStamped()
                 relative_pose.header.frame_id = "base_link"
                 relative_pose.header.stamp = self.node.get_clock().now().to_msg()
-                relative_pose.pose.position.x = positions[(i+2)][1]
-                relative_pose.pose.position.y = positions[(i+2)][0]
+                relative_pose.pose.position.x = -positions[(i+2)][1]
+                relative_pose.pose.position.y = -positions[(i+2)][0]
                 relative_pose.pose.position.z = 0.0
                 relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation
                 self.relative_pose_publishers[i].publish(relative_pose) 
