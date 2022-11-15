@@ -152,14 +152,14 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 ![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
 
 ###### Errors
-![](./demos/ape.png)
+![](./demos/raincloud_plot_ape.png)
 
-## TODO
+## TODO - Experiments
 - [ ] add polyfit uwb bia value to the data input.
 - [x] run single pf in each robot.
 - [x] have a centeralized pf. 
-- [ ] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
-![90%](https://progress-bar.dev/90)
+- [x] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
+<!-- ![90%](https://progress-bar.dev/90) -->
 - [x] add triangulation code and results.
 - [x] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
 - [x] calibrate the odom data for collected data on 13th Oct
@@ -169,3 +169,12 @@ only UWB ranges             |  UWB ranges or spatial detection          |  UWB r
 - [x] how to add spatial detection coordinates into the pf (discussion needed)
 - [x] set the pf initial distribution with the first odometry data
 - [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
+
+## TODO - Experimental Results
+- [ ] Single measurement --> 2 robots
+- [ ] 3 robots moving
+        (1) circles (difference speed, size, and direction)
+        (2) different patterns
+- [ ] Memery Check
+- [ ] Navigation Performance
+- [ ] GPU ?
