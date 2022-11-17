@@ -14,14 +14,14 @@ print("------ START ------")
 
 tri_flag = True
 # bag_file = "cali_4robots_data_02"
-# bag_file = "cali_4robots_data_04"
-bag_file = "4robots_data_07"
+bag_file = "cali_4robots_data_04"
+# bag_file = "4robots_data_07"
 for i in [0,2]:
     print(f"------{fusion[i]}------")
     for r in tqdm.tqdm(range(num_rounds)):
-        p0 = sp.Popen(["ros2", "bag", "play", "recorded_data/20221013/4robots_data_07"], stdout=sp.PIPE, stderr=sp.STDOUT)
+        p0 = sp.Popen(["ros2", "bag", "play", "recorded_data/20221013/cali_4robots_data_04"], stdout=sp.PIPE, stderr=sp.STDOUT)
         time.sleep(0.1)
-        p1 = sp.Popen(["python", "pfilter_ros2_uwb_position_multi_robots_v3.2.py", "--fuse_group", "{}".format(i), "--round", "{}".format(r)], stdout=sp.PIPE, stderr=sp.STDOUT)
+        p1 = sp.Popen(["python", "pfilter_ros2_uwb_position_multi_robots_v4.2.py", "--fuse_group", "{}".format(i), "--round", "{}".format(r)], stdout=sp.PIPE, stderr=sp.STDOUT)
 
         p2 = sp.Popen(["python", "triangulation_ros2_uwb_position_v2.0.py", "--round", "{}".format(r)], stdout=sp.PIPE, stderr=sp.STDOUT)
         if os.path.exists("./result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)):
@@ -31,9 +31,8 @@ for i in [0,2]:
         p3 = sp.Popen(["ros2", "bag", "record",  "/tri_turtle01_pose", "/tri_turtle03_pose", "/tri_turtle04_pose", "/real_turtle01_pose", "/real_turtle03_pose",
                  "/real_turtle04_pose", "/real_turtle05_pose", "/pf_turtle01_pose","/pf_turtle03_pose", "/pf_turtle04_pose", "-o", "./result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)], stdout=sp.PIPE, stderr=sp.STDOUT)
 
-        print(psutil.Process(p3).memory_info().rss / 1024 ** 2)
+        # print(psutil.Process(p3).memory_info().rss / 1024 ** 2)
         p0.wait()
-        p1.send_signal(signal.SIGINT)
         p1.send_signal(signal.SIGINT)
         p2.send_signal(signal.SIGINT)
         p3.send_signal(signal.SIGINT)

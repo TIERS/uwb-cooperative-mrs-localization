@@ -140,10 +140,6 @@ class BiasEstimation(Node) :
                     optitrack_turtle03_orientation_np = optitrack_turtle03_orientation_np
                     )
 
-
-
-
-
     def euler_from_quaternion(self,pose):
             """
             Convert a quaternion into euler angles (roll, pitch, yaw)
