@@ -5,9 +5,13 @@ This repo contains code for refine the Ultral-Wideband ranging with the detected
 ### Intel PC
 <!-- TODO: add installation approaches -->
 ros2 galactic
+
 pfilter
-numpyls
+
+numpy
+
 depthai_ros_msgs
+
 matplotlib
 
 ### Nvidia Jetson Nano 
