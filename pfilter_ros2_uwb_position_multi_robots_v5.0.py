@@ -12,8 +12,6 @@ import math
 import argparse
 import shutil
 
-import datetime
-
 from std_msgs.msg               import Float64
 from geometry_msgs.msg          import PoseStamped
 from geometry_msgs.msg          import PoseWithCovarianceStamped
@@ -28,22 +26,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
-fuse_name       = ["u", "u_v", "uv"]
-turtles         = ["5", "1", "3", "4"]
+with_polyfit    = False
+fuse_name       = ["u", "uv"]
+turtles         = ["5", "1"  , "3", "4"]
 spatial_pair    = list(combinations(turtles,2))
 # [('5', '1'), ('5', '3'), ('5', '4'), ('1', '3'), ('1', '4'), ('3', '4')]
-uwbs            = ["5", "7", "3", "4"]
-uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5), (4,5), (2,5)]
-uwb_odoms       = [(2,1), (3,1), (0,1), (2,3), (0,2), (0,3), (1,0), (2,0), (3,0), (1,0)]
+uwbs            = ["5", "7"  , "3", "4"]
+uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
 spatial_uwb     = {spatial_pair[0]: 6, spatial_pair[1]: 7, spatial_pair[2]: 8, spatial_pair[3]: 0, spatial_pair[4]: 1, spatial_pair[5]: 3}
 spatial_dict    = {sp:[] for sp in spatial_pair}
+uwb_odoms       = [(2,1), (3,1), (0,1), (2,3), (0,2), (0,3), (1,0), (2,0), (3,0), (1,0)]
+
 
 #  get parameters from terminal
 def parse_args():
     parser = argparse.ArgumentParser(description='Options to control relative localization with only UWB, assisit with Vision, and all if vision available')
-    parser.add_argument('--poses_save', type=bool, default=True, help='choose to save the estimated poses with pf')
-    parser.add_argument('--images_save', type=bool, default=True, help='choose to save the images with pf')
-    parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: with vision replace new measurement, 2: uwb and vision together')
+    parser.add_argument('--poses_pub', type=bool, default=True, help='choose to publish the estimated poses with pf')
+    parser.add_argument('--poses_save', type=bool, default=False, help='choose to save the estimated poses with pf')
+    parser.add_argument('--images_save', type=bool, default=False, help='choose to save the images with pf')
+    parser.add_argument('--computation_save', type=bool, default=True, help='choose to save the computation time with pf')
+    parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: uwb and vision together')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
     return args
@@ -61,6 +63,12 @@ if args.images_save:
     images_save_path = './results/pfilter/images/images_{}/images_{}_{}/'.format(fuse_name[args.fuse_group], fuse_name[args.fuse_group], args.round)
     if not os.path.exists(images_save_path):
         os.makedirs(images_save_path)
+
+if args.computation_save:
+    computation_save_path = "./results/pfilter/computation/computation_{}/".format(fuse_name[args.fuse_group])
+    computation_file = computation_save_path + 'computation_time_{}.csv'.format(args.round)
+    if not os.path.exists(computation_save_path):
+        os.makedirs(computation_save_path)
 
 class UWBParticleFilter(Node) :
     '''
@@ -108,7 +116,7 @@ class UWBParticleFilter(Node) :
         self.counter                = 0
         self.vis_flag               = False
         self.uwb_ranges             = [0.0 for _ in uwb_pair]
-        self.turtles_mocaps         = [np.zeros(2) for _ in turtles]
+        self.turtles_mocaps         = [np.zeros(6) for _ in turtles]
         self.turtles_odoms_flag     = [False for _ in turtles]
         self.turtles_odoms          = [Odometry() for _ in turtles]
         self.last_turtles_odoms     = [Odometry() for _ in turtles]
@@ -120,7 +128,8 @@ class UWBParticleFilter(Node) :
         self.pf_init_flag           = False
         self.fake_odom              = [np.zeros(2) for _ in turtles]
         self.fake_last_odom         = [np.zeros(2) for _ in turtles]
-        self.poly_coefficient       = [ 2.57470250e-12, -1.34638592e-09, 1.35321466e-07,  1.62954135e-05, -1.18750581e-03,  3.24078986e-01]
+        self.computation_time       = []
+        self.poly_coefficient       = [ 2.30932370e-13,  1.03347377e-11, -9.03676014e-08,  2.61712111e-05,  -2.07631167e-03,  2.15006000e-01]
 
         self.get_logger().info("Subscribing to topics")
         # subscribe to uwb ranges 
@@ -138,8 +147,8 @@ class UWBParticleFilter(Node) :
         # subscribe to odometries
         self.odom_subs = [
             self.create_subscription(Odometry, "/cali/turtle0{}/odom".format(t), 
-            self.create_odom_cb(i),10) for i, t in enumerate(turtles)]
-        self.get_logger().info("{} odom poses received!".format(len(self.turtles_mocaps)))
+            self.create_odom_cb(i), 10) for i, t in enumerate(turtles)]
+        self.get_logger().info("{} odom poses received!".format(len(self.turtles_odoms)))
 
         # subscribe to spatial detections
         self.spatial_subs = [
@@ -160,13 +169,13 @@ class UWBParticleFilter(Node) :
         return lambda range : self.uwb_range_cb(i, range)
         
     def uwb_range_cb(self, i, range):
-        self.uwb_ranges[i] = range.range
+        self.uwb_ranges[i] = range.range -0.32
 
     def create_mocap_pose_cb(self, i):
         return lambda pos : self.mocap_pose_cb(i, pos)
         
     def mocap_pose_cb(self, i, pos):
-        self.turtles_mocaps[i] = np.array([pos.pose.position.x, pos.pose.position.y])  
+        self.turtles_mocaps[i] = np.array([pos.pose.position.x, pos.pose.position.y, pos.pose.orientation.x, pos.pose.orientation.y, pos.pose.orientation.z, pos.pose.orientation.w])  
         true_relative_pos = pos
         true_relative_pos.header.stamp = self.get_clock().now().to_msg()
         true_relative_pos.pose.position.x =  pos.pose.position.x - self.turtles_mocaps[0][0]
@@ -189,7 +198,7 @@ class UWBParticleFilter(Node) :
 
     def relative_pose_cal(self, origin, ends, relative_poses):
         for inx, end in enumerate(ends):
-            relative_poses[inx] = end - origin   
+            relative_poses[inx] = end[0:2] - origin[0:2]   
 
     def update_range_from_object_pose(self, object_end_pose_array, object_ori_pose_array):
         robots_relative_pose = np.array([-object_end_pose_array[0].position.x + object_ori_pose_array[0].position.x,
@@ -218,85 +227,43 @@ class UWBParticleFilter(Node) :
         xp = x + np.random.normal(0, self.uwb_noise, x.shape)
         return xp
 
-    # def uwb_bias_prediction(self, orientations, uwb_bias):
-
-
-
     def calc_hypothesis(self, x) :
         '''
             Given (Nx2) matrix of positions,
             create N arrays of observations (just one for now)
             uwb_pair  = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
         '''  
-        # y = np.linalg.norm(x, axis=1)
-        # print(f"y:{y.shape}")
-        # print(x.shape)
-        y = []
-
-        t = datetime.datetime.now()
-
-        p2 = np.array([0.0, -7.0])
-        
-        if args.fuse_group == 2 and self.vis_flag:
+        y = [] 
+        p2 = np.array([[0.0, -7.0]]*x.shape[0])
+        temp = np.array([x[:,0:2] - x[:,2:4], x[:,0:2] - x[:,4:6], x[:,0:2] - p2,
+                        x[:,2:4] - x[:,4:6], x[:,2:4] - p2, x[:,4:6] - p2,
+                        x[:,0:2], x[:,2:4],  x[:,4:6], p2])
+        y = np.linalg.norm(temp, axis=2)
+        if args.fuse_group == 1 and self.vis_flag:
             self.vis_flag = False
             sp_temp = [spatial_dict[spatial_pair[0]], spatial_dict[spatial_pair[1]],spatial_dict[spatial_pair[2]],
-                       spatial_dict[spatial_pair[3]], spatial_dict[spatial_pair[4]],spatial_dict[spatial_pair[5]]]
-            for p in x :
-                tmp = [
-                    np.linalg.norm(p[0:2] - p[2:4]),
-                    np.linalg.norm(p[0:2] - p[4:6]),
-                    np.linalg.norm(p[0:2] - p2),
-                    np.linalg.norm(p[2:4] - p[4:6]),
-                    np.linalg.norm(p[2:4] - p2),
-                    np.linalg.norm(p[4:6] - p2),
-                    np.linalg.norm(p[0:2]),
-                    np.linalg.norm(p[2:4]),
-                    np.linalg.norm(p[4:6]),
-                    np.linalg.norm(p2),
-                ]   
-                # [('5', '1'), ('5', '3'), ('5', '4'), ('1', '3'), ('1', '4'), ('3', '4')]
-                for sp in range(len(sp_temp)):
-                    if len(sp_temp[sp])>0:
-                        if sp < 3:
-                            for _ in sp_temp[sp]:
-                                tmp.append(p[2*sp])
-                                tmp.append(p[2*sp+1])
-                        else:
-                            if sp == 3:
-                                for _ in sp_temp[3]:
-                                    tmp.append(p[2] - p[0])
-                                    tmp.append(p[3] - p[1])
-
-                            if sp == 4:
-                                for _ in sp_temp[4]:
-                                    tmp.append(p[4] - p[0])
-                                    tmp.append(p[5] - p[1])
-
-                            if sp == 5:
-                                for _ in sp_temp[5]:
-                                    tmp.append(p[4] - p[2])
-                                    tmp.append(p[5] - p[3])
-                y.append(tmp)
-
-        else:
-            for p in x :
-                tmp = [
-                    np.linalg.norm(p[0:2] - p[2:4]),
-                    np.linalg.norm(p[0:2] - p[4:6]),
-                    np.linalg.norm(p[0:2] - p2),
-                    np.linalg.norm(p[2:4] - p[4:6]),
-                    np.linalg.norm(p[2:4] - p2),
-                    np.linalg.norm(p[4:6] - p2),
-                    np.linalg.norm(p[0:2]),
-                    np.linalg.norm(p[2:4]),
-                    np.linalg.norm(p[4:6]),
-                    np.linalg.norm(p2),
-                ]
-                y.append(tmp)
-
-        tt = datetime.datetime.now() - t
-        y = np.array(y)
-        return y
+                                 spatial_dict[spatial_pair[3]], spatial_dict[spatial_pair[4]],spatial_dict[spatial_pair[5]]]
+            tmp = []
+            for sp in range(len(sp_temp)):
+                if len(sp_temp[sp])>0:
+                    if sp < 3:
+                        for _ in sp_temp[sp]:
+                            tmp.append(x[:,2*sp])
+                            tmp.append(x[:,2*sp+1])
+                    elif sp == 3:
+                        for _ in sp_temp[3]:
+                            tmp.append(x[:,2] - x[:,0])
+                            tmp.append(x[:,3] - x[:,1])
+                    elif sp == 4:
+                        for _ in sp_temp[4]:
+                            tmp.append(x[:,4] - x[:,0])
+                            tmp.append(x[:,5] - x[:,1])
+                    elif sp == 5:
+                        for _ in sp_temp[5]:
+                            tmp.append(x[:,4] - x[:,2])
+                            tmp.append(x[:,5] - x[:,3])   
+            y = np.concatenate((y, np.array(tmp)), axis=0)
+        return np.transpose(y)
 
     def calc_weights(self, hypotheses, observations) :
         '''
@@ -307,27 +274,13 @@ class UWBParticleFilter(Node) :
         # print(f"w: {w.shape}")
         return w
     
-    def fake_odom_fun(self):
-        # self.get_logger().info("Set Fake Odom.")
-        for t, t_cap in enumerate(self.turtles_mocaps):
-            mean, std = 0.0, 0.05
-            self.fake_odom[t][0] = t_cap[0] + np.random.normal(mean, std)
-            self.fake_odom[t][1] = t_cap[1] + np.random.normal(mean, std)
-            temp_odom = Odometry()
-            temp_odom.pose.pose.position.x = self.fake_odom[t][0]
-            temp_odom.pose.pose.position.y = self.fake_odom[t][1]
-            temp_odom.pose.pose.position.z = 0.0
-            self.fake_odom_publishers[t].publish(temp_odom)
-
-    def cal_yaws(self, odom):
-        r = R.from_quat([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])
-        yaw, _, _ = r.as_euler('zxy', degrees=True)
-        return yaw
 
     def pf_filter_init(self):
         # Create filter
-        # print(self.turtles_mocaps)
-        self.prior_init = self.turtles_mocaps[1:] - np.array([self.turtles_mocaps[0][0], self.turtles_mocaps[0][1]])
+        # print(self.turtles_mocaps[1:][0:2])
+        init_mocaps = np.array(self.turtles_mocaps)
+        # print(init_mocaps[1:, 0:2])
+        self.prior_init = init_mocaps[1:, 0:2]- np.array([self.turtles_mocaps[0][0], self.turtles_mocaps[0][1]])
         # print(self.prior_init.flatten())
         self.prior_fn = lambda n: self.prior_init.flatten() + np.random.normal(0,0.2,(n,self.num_states)) #np.random.uniform(-8,8,(n,8))+self.odoms_init
 
@@ -344,85 +297,36 @@ class UWBParticleFilter(Node) :
         self.pf.init_filter()
         self.pf_init_flag = True
         # Responder positions
-        self.get_logger().info("UWB PF initialized. Estimating position from UWB and odom.")
+        # self.get_logger().info("UWB PF initialized. Estimating position from UWB and odom.")
 
-    def update_filter(self) :
-        '''
-            Upadate particle filter
-        '''
-        if all(self.turtles_odoms_flag) and  not self.pf_init_flag:
-            self.pf_filter_init()
 
-        # self.fake_odom_fun()
-        if self.pf_init_flag:
-            # set measurements
-            # check uwb measurements， add poly fited errors
-            predict = np.poly1d(self.poly_coefficient)
-            yaws = [self.cal_yaws(odom) for odom in self.turtles_odoms]
-            uwb_bias = [predict(yaws[uo[1]] - yaws[uo[0]]) for uo in uwb_odoms]
-            # print(uwb_bias)
-            uwb_ranges = list(np.subtract(np.array(self.uwb_ranges), np.array(uwb_bias)))
-            ## check vision measurements
-            vis_meas_list = []
-            # print("******************************")
-            if args.fuse_group == 2 or args.fuse_group == 1:
-                for i, p in enumerate(spatial_pair):
-                    spatial_dict[p].clear()
-                    if self.spatial_objects[p[0]].size > 0 and self.spatial_objects[p[1]].size > 0:
-                        for obj0 in self.spatial_objects[p[0]]:
-                            for obj1 in self.spatial_objects[p[1]]:
-                                vis_meas = self.update_range_from_object_pose(obj0, obj1)
-                                if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.10:
-                                    self.num_vision+=1
-                                    self.vis_flag = True
-                                    spatial_dict[p].extend([[obj0, obj1]])
-                                    # vis_meas_list.append(vis_meas)
-                                    vis_meas_list.append(obj1.position.x - obj0.position.x)
-                                    vis_meas_list.append(obj1.position.y - obj0.position.y)
-            if args.fuse_group == 2 and len(vis_meas_list) > 0:
-                new_meas = np.append(uwb_ranges, [vis_meas_list])
-            else:
-                new_meas = np.array(uwb_ranges)
-            if len(vis_meas_list) > 0:
-                print(f"only uwb: {uwb_ranges}")
-                print(f"vision  : {vis_meas_list}")
-                print(f"new meas: {new_meas}")
-                print("******************************")
-                
-            for i in range(1, len(turtles)):
-                self.particle_odom[2*(i-1)] = (self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
-                                        (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x))
-                self.particle_odom[2*(i-1)+1] = (self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
-                                        (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y))
-            self.last_turtles_odoms = np.copy(self.turtles_odoms)
+    def update_particle_odom(self):
+        for i in range(1, len(turtles)):
+            self.particle_odom[2*(i-1)] = (self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
+                                    (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x))
+            self.particle_odom[2*(i-1)+1] = (self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
+                                    (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y))
+        self.last_turtles_odoms = np.copy(self.turtles_odoms)
 
-            self.pf.update(observed=new_meas)
-            for i in range(self.num_states) :
-                if self.pf.cov_state[i][0] > 0.3 or self.pf.cov_state[i][1] > 0.3 :
-                    self.get_logger().warn("PF covariance too high for Turtle {} with covx={} and covy={}".format(i, self.pf.cov_state[i][0], self.pf.cov_state[i][1]))
+    def relative_poses_pub(self):
+        # publish pf relative pose
+        for i in range(len(turtles[1:])):
+            relative_pose = PoseStamped()
+            relative_pose.header.frame_id = "base_link"
+            relative_pose.header.stamp = self.get_clock().now().to_msg()
+            relative_pose.pose.position.x = self.pf.mean_state[2*i]
+            relative_pose.pose.position.y = self.pf.mean_state[2*i+1]
+            relative_pose.pose.position.z = 0.0
+            relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation
+            self.relative_pose_publishers[i].publish(relative_pose)   
 
-            # publish pf relative pose
-            for i in range(len(turtles[1:])):
-                relative_pose = PoseStamped()
-                relative_pose.header.frame_id = "base_link"
-                relative_pose.header.stamp = self.get_clock().now().to_msg()
-                relative_pose.pose.position.x = self.pf.mean_state[2*i]
-                relative_pose.pose.position.y = self.pf.mean_state[2*i+1]
-                relative_pose.pose.position.z = 0.0
-                relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation
-                self.relative_pose_publishers[i].publish(relative_pose)   
-
-            # cal true or predicted relative poses
-            self.relative_pose_cal(self.turtles_mocaps[0], self.turtles_mocaps[1:], self.true_relative_poses)
-            pf_relative_poses = [self.pf.mean_state[0], self.pf.mean_state[1], self.pf.mean_state[2], self.pf.mean_state[3], self.pf.mean_state[4], self.pf.mean_state[5]]
-            relative_poses = np.append(np.hstack(self.true_relative_poses), pf_relative_poses).tolist()
-
-            # save groundtruth poses and calcuated poses to csv
-            if args.poses_save: 
-                self.pos_estimation.append(relative_poses)
-
-            if args.images_save:
-                self.plot_particles()
+    def relative_poses_save(self):
+        # cal true or predicted relative poses
+        self.relative_pose_cal(self.turtles_mocaps[0][0:2], self.turtles_mocaps[1:][0:2], self.true_relative_poses)
+        pf_relative_poses = [self.pf.mean_state[0], self.pf.mean_state[1], self.pf.mean_state[2], self.pf.mean_state[3], self.pf.mean_state[4], self.pf.mean_state[5]]
+        relative_poses = np.append(np.hstack(self.true_relative_poses), pf_relative_poses).tolist()
+        # save groundtruth poses and calcuated poses to csv
+        self.pos_estimation.append(relative_poses)
 
     def plot_particles(self):
         """Plot a 1D tracking result as a line graph with overlaid
@@ -455,21 +359,126 @@ class UWBParticleFilter(Node) :
         self.counter += 1
         plt.savefig(images_save_path + "/test{}.png".format(self.counter))
 
+    def get_measurements(self, uwb_ranges):
+        new_meas = np.array([])
+        vis_meas_list = []
+        if args.fuse_group == 1:
+            for i, p in enumerate(spatial_pair):
+                spatial_dict[p].clear()
+                if self.spatial_objects[p[0]].size > 0 and self.spatial_objects[p[1]].size > 0:
+                    for obj0 in self.spatial_objects[p[0]]:
+                        for obj1 in self.spatial_objects[p[1]]:
+                            vis_meas = self.update_range_from_object_pose(obj0, obj1)
+                            if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.10:
+                                self.num_vision+=1
+                                self.vis_flag = True
+                                spatial_dict[p].extend([[obj0, obj1]])
+                                # vis_meas_list.append(vis_meas)
+                                vis_meas_list.append(obj1.position.x - obj0.position.x)
+                                vis_meas_list.append(obj1.position.y - obj0.position.y)
+            if len(vis_meas_list) > 0:
+                new_meas = np.append(uwb_ranges, [vis_meas_list])
+            else:
+                new_meas = np.array(uwb_ranges)
+        else:   
+            new_meas = np.array(uwb_ranges)
+        return new_meas
+
+    def cal_yaws(self, odom):
+        r = R.from_quat([odom.pose.pose.orientation.x, odom.pose.pose.orientation.y, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w])
+        yaw, _, _ = r.as_euler('zxy', degrees=True)
+        return yaw
     
+    def cal_yaws(self, array):
+        r = R.from_quat(array)
+        yaw, _, _ = r.as_euler('zxy', degrees=True)
+        return yaw
+
+    def fake_odom_fun(self):
+        # self.get_logger().info("Set Fake Odom.")
+        for t, t_cap in enumerate(self.turtles_mocaps):
+            mean, std = 0.0, 0.05
+            self.fake_odom[t][0] = t_cap[0] + np.random.normal(mean, std)
+            self.fake_odom[t][1] = t_cap[1] + np.random.normal(mean, std)
+            temp_odom = Odometry()
+            temp_odom.pose.pose.position.x = self.fake_odom[t][0]
+            temp_odom.pose.pose.position.y = self.fake_odom[t][1]
+            temp_odom.pose.pose.position.z = 0.0
+            self.fake_odom_publishers[t].publish(temp_odom)
+
+    def update_filter(self) :
+        '''
+            Upadate particle filter
+        '''
+        start = time.time_ns() / (10 ** 9)
+        if all(self.turtles_odoms_flag) and  not self.pf_init_flag:
+            self.pf_filter_init()
+            self.get_logger().info("UWB PF initialized. Estimating position from UWB and odom.")
+
+        if self.pf_init_flag:
+            self.fake_odom_fun()
+            # set measurements
+            # check uwb measurements
+            if with_polyfit:
+                predict = np.poly1d(self.poly_coefficient)
+                yaws = [self.cal_yaws([mo[2],mo[3],mo[4],mo[5]]) for mo in self.turtles_mocaps]
+                print(yaws)
+                uwb_bias = [predict(yaws[uo[1]] - yaws[uo[0]]) for uo in uwb_odoms]
+                # print(uwb_bias)
+                uwb_ranges = list(np.subtract(np.array(self.uwb_ranges), np.array(uwb_bias)))
+            else:
+                uwb_ranges = self.uwb_ranges
+            # print(uwb_ranges)
+            ## check vision measurements
+            # new_meas = np.array([])
+            new_meas = self.get_measurements(uwb_ranges)
+
+            # print(new_meas)
+            self.update_particle_odom()
+
+            self.pf.update(observed=new_meas)
+
+            for i in range(self.num_states) :
+                if self.pf.cov_state[i][0] > 0.3 or self.pf.cov_state[i][1] > 0.3 :
+                    self.get_logger().warn("PF covariance too high for Turtle {} with covx={} and covy={}".format(i, self.pf.cov_state[i][0], self.pf.cov_state[i][1]))
+
+            if args.poses_pub:
+                self.relative_poses_pub()
+
+            if args.poses_save: 
+                self.relative_poses_save()
+
+            if args.images_save:
+                self.plot_particles()
+        end = time.time_ns() / (10 ** 9)
+        self.computation_time.append(end - start)
+
+
+   
     def __del__(self):
         # body of destructor
-        self.get_logger().info("PF ends and Saving Results.")
-        print(f"num of vision: {self.num_vision}")
+        self.get_logger().info("PF ends and Saving Results. And in the process, {} of vision informaiton used".format(self.num_vision))
         if args.poses_save: 
             np.savetxt(pos_file, 
             self.pos_estimation,
             delimiter =", ", 
-            fmt ='% s')       
+            fmt ='% s')   
+
+        if args.computation_save: 
+            np.savetxt(computation_file, 
+            self.computation_time,
+            delimiter =", ", 
+            fmt ='% s')          
+
+            
 
 
 def main(args=None):
     rclpy.init(args=args)
     filter = UWBParticleFilter()
+    # Reset filter
+    # filter.pf.init_filter()
+
     time.sleep(1)
     # Start calculating relative positions
     

@@ -36,6 +36,7 @@ uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5),
 def parse_args():
     parser = argparse.ArgumentParser(description='Options for triangulations to calculate the relative position of robots based on UWB rangessss')
     parser.add_argument('--poses_save', type=bool, default=False, help='choose to save the estimated poses with triangulation')
+    parser.add_argument('--computation_save', type=bool, default=True, help='choose to save the computation time with triangulation')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
     return args
@@ -49,6 +50,11 @@ if args.poses_save:
     if not os.path.exists(pos_folder):
         os.makedirs(pos_folder)
 
+if args.computation_save:
+    computation_save_path = "./results/triangulation/computation/"
+    computation_file = computation_save_path + 'computation_time_{}.csv'.format(args.round)
+    if not os.path.exists(computation_save_path):
+        os.makedirs(computation_save_path)
 
 class UWBTriangulation(Node) :
     '''
@@ -82,6 +88,7 @@ class UWBTriangulation(Node) :
         self.true_relative_poses    = [np.zeros(2) for _ in range(1,len(turtles))]
         self.relative_poses         = [np.zeros(2) for _ in range(1,len(turtles))]
         self.pos_estimation         = []
+        self.computation_time       = []
 
         self.node.get_logger().info("Subscribing to topics")
         # subscribe to uwb ranges 
@@ -131,6 +138,8 @@ class UWBTriangulation(Node) :
     def relative_pose_cal(self, origin, ends, relative_poses):
         for inx, end in enumerate(ends):
             relative_poses[inx] = end - origin    
+
+    ######################Init_poses##########################
 
     def positions_uwb(self, n1,n2,uwb_num,dists):
         """Calculating the positions of the points based on the different base nodes"""
@@ -236,23 +245,6 @@ class UWBTriangulation(Node) :
         #     final = final_pose_m
         return final
 
-        ###################sum_error############################
-
-    def anomaly_base_err(self, err,uwb_num,list_err):
-
-        distances_arr = np.array(list_err)
-        sum_err = np.zeros(uwb_num)
-        dist_err = np.zeros((uwb_num,uwb_num))
-
-        for i in range(len(err)):
-            for nd in range(uwb_num):
-                if err[i][1] == nd+1 or err[i][2] == nd+1:
-                    sum_err[nd] += err[i][0]
-                    dist_err[nd] += distances_arr[i]
-
-        return(sum_err,dist_err)
-
-
     ######################matching##########################
     def matching(self, avr_pose_base, positions):
         # print("matching")
@@ -356,11 +348,12 @@ class UWBTriangulation(Node) :
         '''
             Calculates relative poses of nodes doing TOF
         '''
+        start = time.time_ns() / (10 ** 9)
         positions = [np.zeros(2) for _ in range(5)] 
         positions[0] = np.array([0, 0])
         positions[1] = np.array([self.uwb_ranges[9], 0])
         uwb_num = 5
-        time = 1
+        # time = 1
         all_positions = []
         final_pose_p = []
         final_pose_m = []
@@ -404,13 +397,13 @@ class UWBTriangulation(Node) :
             # avr_pose_base = reshaped_positions[0]
             avr_pose_base = np.mean(reshaped_positions, axis=0)
             # print(f"avr_pose_base:{avr_pose_base}")
-            new_positions,err,array_err = self.matching(avr_pose_base,reshaped_positions)
+            # new_positions,err,array_err = self.matching(avr_pose_base,reshaped_positions)
 
             # sus_base_nodes = [i+1 for i,j in enumerate(err) if j> np.mean(err)*1.5]
             # print(f"new_positions:{new_positions}")
 
             # avg_position_all = np.mean(new_positions, axis=0)
-            print(avr_pose_base.shape)
+            # print(avr_pose_base.shape)
 
             self.relative_pose_cal(self.turtles_mocaps[0], self.turtles_mocaps[1:], self.true_relative_poses)
             self.pos_estimation.append([self.true_relative_poses[0][0], self.true_relative_poses[0][1],
@@ -437,6 +430,8 @@ class UWBTriangulation(Node) :
 
         except ValueError:
             self.node.get_logger().error("math domain error")
+        end = time.time_ns() / (10 ** 9)
+        self.computation_time.append(end - start)
 
     def run(self) :
         '''
@@ -450,6 +445,7 @@ class UWBTriangulation(Node) :
         self.tof_timer = self.node.create_timer(0.2, self.calculate_relative_poses)
         
         self.node.get_logger().info("Starting ToF Position Calculations...")
+
         try:
             rclpy.spin(self.node)
         except KeyboardInterrupt :
@@ -460,12 +456,19 @@ class UWBTriangulation(Node) :
     
     def __del__(self):
         # body of destructor
-        self.node.get_logger().info("triangulation ends and Saving Results.")
+        self.node.get_logger().info("triangulation ends and Saving Results. Got {} poses and {} computation recordings.".format(
+                                len(self.pos_estimation), len(self.computation_time)))
+        if args.poses_save:
+            np.savetxt(pos_file, 
+                self.pos_estimation,
+                delimiter =", ", 
+                fmt ='% s')     
 
-        np.savetxt(pos_file, 
-           self.pos_estimation,
-           delimiter =", ", 
-           fmt ='% s')       
+        if args.computation_save: 
+            np.savetxt(computation_file, 
+                self.computation_time,
+                delimiter =", ", 
+                fmt ='% s')        
 
 
 def main(args=None):

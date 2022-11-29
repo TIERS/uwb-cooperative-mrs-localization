@@ -1,13 +1,21 @@
 # uwb_ranging_refine_with_spatial_detection
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
-## Dependency
+## Installation 
+### Intel PC
 <!-- TODO: add installation approaches -->
 ros2 galactic
 pfilter
 numpyls
 depthai_ros_msgs
 matplotlib
+
+### Nvidia Jetson Nano 
+<!-- TODO:add installation approaches -->
+
+
+### Raspberry
+
 
 ## Data
 ### Recorded ros2 bags from 2022/09/23. 
