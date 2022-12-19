@@ -378,7 +378,7 @@ class UWBParticleFilter(Node) :
                     for obj0 in self.spatial_objects[p[0]]:
                         for obj1 in self.spatial_objects[p[1]]:
                             vis_meas = self.update_range_from_object_pose(obj0, obj1)
-                            if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.10:
+                            if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.20:
                                 self.num_vision+=1
                                 self.vis_flag = True
                                 spatial_dict[p].extend([[obj0, obj1]])
@@ -406,7 +406,7 @@ class UWBParticleFilter(Node) :
     def fake_odom_fun(self):
         # self.get_logger().info("Set Fake Odom.")
         for t, t_cap in enumerate(self.turtles_mocaps):
-            mean, std = 0.0, 0.05
+            mean, std = 0.0, 0.15
             self.fake_odom[t][0] = t_cap[0] + np.random.normal(mean, std)
             self.fake_odom[t][1] = t_cap[1] + np.random.normal(mean, std)
             temp_odom = Odometry()

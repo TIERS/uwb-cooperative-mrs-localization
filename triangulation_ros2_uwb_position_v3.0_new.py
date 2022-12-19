@@ -28,14 +28,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
-turtles         = ["5", "1"  , "3", "4"]
-uwbs            = ["5", "7"  , "3", "4"]
-uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
+turtles         = ["4", "1", "2", "3", "5"]
+uwbs            = ["4", "1", "2", "3", "5"]
+uwb_pair        = [(4,1), (4,2), (4,3), (4,5), (1,2), (1,3), (1,5), (2,3),(2,5), (3,5)]
+num_turtles     = 5
 
 #  get parameters from terminal
 def parse_args():
     parser = argparse.ArgumentParser(description='Options for triangulations to calculate the relative position of robots based on UWB rangessss')
-    parser.add_argument('--poses_save', type=bool, default=False, help='choose to save the estimated poses with triangulation')
+    parser.add_argument('--poses_save', type=bool, default=True, help='choose to save the estimated poses with triangulation')
     parser.add_argument('--computation_save', type=bool, default=True, help='choose to save the computation time with triangulation')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
@@ -45,13 +46,13 @@ args = parse_args()
 
 # Build folder to save results from different fusion combinations
 if args.poses_save:
-    pos_folder = "./results/triangulation/pos/pos_tri/"
+    pos_folder = "./results/results_csv/triangulation/pos/pos_tri/"
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     if not os.path.exists(pos_folder):
         os.makedirs(pos_folder)
 
 if args.computation_save:
-    computation_save_path = "./results/triangulation/computation/"
+    computation_save_path = "./results/results_csv/triangulation/computation/"
     computation_file = computation_save_path + 'computation_time_{}.csv'.format(args.round)
     if not os.path.exists(computation_save_path):
         os.makedirs(computation_save_path)
@@ -89,24 +90,25 @@ class UWBTriangulation(Node) :
         self.relative_poses         = [np.zeros(2) for _ in range(1,len(turtles))]
         self.pos_estimation         = []
         self.computation_time       = []
+        
 
         self.node.get_logger().info("Subscribing to topics")
         # subscribe to uwb ranges 
         self.uwb_subs = [
             self.node.create_subscription(Range, "/uwb/tof/n_{}/n_{}/distance".format(p[0], p[1]), 
-            self.create_uwb_ranges_cb(i),10) for i, p in enumerate(uwb_pair)]
+            self.create_uwb_ranges_cb(i),qos_profile=self.qos) for i, p in enumerate(uwb_pair)]
         self.node.get_logger().info("{} UWB ranges received!".format(len(self.uwb_ranges)))
 
         # subscribe to optitrack mocap poses
         self.mocap_subs = [
-            self.node.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot{}_cap/pose".format(t), 
+            self.node.create_subscription(PoseStamped, "/vrpn_client_node/tb0{}/pose".format(t), 
             self.create_mocap_pose_cb(i), 10) for i, t in enumerate(turtles)]
         self.node.get_logger().info("{} Mocaps poses received!".format(len(self.turtles_mocaps)))
         
         # subscribe to odometries
         self.odom_subs = [
-            self.node.create_subscription(Odometry, "/cali/turtle0{}/odom".format(t), 
-            self.create_odom_cb(i),10) for i, t in enumerate(turtles)]
+            self.node.create_subscription(Odometry, "/turtle0{}/odom".format(t), 
+            self.create_odom_cb(i),qos_profile=self.qos) for i, t in enumerate(turtles)]
         self.node.get_logger().info("{} odom poses received!".format(len(self.turtles_mocaps)))
 
         # pf relative poses publishers
@@ -156,7 +158,7 @@ class UWBTriangulation(Node) :
         # bases = int('{}{}'.format(n1,n2))\
         # print(f"{dists[node1][node2]},{dists[node1][idx]},{dists[idx][node2]}")
         positions[node1] = np.array([0, 0,n1,n1,n2])
-        positions[node2] = np.array([dists[node1][node2], 0,n2,n1,n2]) 
+        positions[node2] = np.array([dists[node1][node2], 0, n2, n1, n2]) 
         ss = True
 
         for idx in uwb_list:
@@ -223,27 +225,27 @@ class UWBTriangulation(Node) :
 
     ######################maj_side##########################
 
-    def side(self, points, side_p_count, side_m_count, final_pose_p, final_pose_m):
-        """positive or negative side based on the majority points"""
-        for i in range(len(points)):
-            for j in range(len(points[i])):
-                if points[i][j][1] > 0:
-                    side_p_count += 1
-                    final_pose_p.append([points[i][j][0], points[i][j][1],
-                    points[i][j][2],points[i][j][3],points[i][j][4]])
-                    final_pose_m.append([points[i][j][0], -points[i][j][1],
-                    points[i][j][2],points[i][j][3],points[i][j][4]])
-                else:
-                    side_m_count += 1
-                    final_pose_p.append([points[i][j][0], -points[i][j][1],
-                    points[i][j][2],points[i][j][3],points[i][j][4]])
-                    final_pose_m.append([points[i][j][0], points[i][j][1], 
-                    points[i][j][2],points[i][j][3],points[i][j][4]])    
-        # if side_p_count > side_m_count:
-        final = final_pose_p
-        # else:
-        #     final = final_pose_m
-        return final
+    def side(self, points, side_p_count, side_m_count):
+            """positive or negative side based on the majority points"""
+            for i in range(len(points)):
+                for j in range(len(points[i])):
+                    if points[i][j][1] > 0:
+                        side_p_count += 1
+                        self.final_pose_p.append([points[i][j][0], points[i][j][1],
+                        points[i][j][2],points[i][j][3],points[i][j][4]])
+                        self.final_pose_m.append([points[i][j][0], -points[i][j][1],
+                        points[i][j][2],points[i][j][3],points[i][j][4]])
+                    else:
+                        side_m_count += 1
+                        self.final_pose_p.append([points[i][j][0], -points[i][j][1],
+                        points[i][j][2],points[i][j][3],points[i][j][4]])
+                        self.final_pose_m.append([points[i][j][0], points[i][j][1], 
+                        points[i][j][2],points[i][j][3],points[i][j][4]])    
+            # if side_p_count > side_m_count:
+            final = self.final_pose_p
+            # else:
+            #     final = final_pose_m
+            return final
 
     ######################matching##########################
     def matching(self, avr_pose_base, positions):
@@ -349,36 +351,40 @@ class UWBTriangulation(Node) :
             Calculates relative poses of nodes doing TOF
         '''
         start = time.time_ns() / (10 ** 9)
-        positions = [np.zeros(2) for _ in range(5)] 
+        positions = [np.zeros(2) for _ in range(num_turtles)] 
         positions[0] = np.array([0, 0])
-        positions[1] = np.array([self.uwb_ranges[9], 0])
+        # positions[1] = np.array([self.uwb_ranges[9], 0])
         uwb_num = 5
         # time = 1
         all_positions = []
-        final_pose_p = []
-        final_pose_m = []
+        self.final_pose_p = []
+        self.final_pose_m = []
         side_p_count = 0
         side_m_count = 0
         init_imp = -100
         # print("******")
         dists = np.zeros((uwb_num+1,uwb_num+1))
         # 7,3,4,5,2
-        dists[0][1],dists[1][0]=self.uwb_ranges[9],self.uwb_ranges[9]
-        dists[0][2],dists[2][0]=self.uwb_ranges[6],self.uwb_ranges[6]
-        dists[0][3],dists[3][0]=self.uwb_ranges[7],self.uwb_ranges[7]
-        dists[0][4],dists[4][0]=self.uwb_ranges[8],self.uwb_ranges[8]
-        dists[1][2],dists[2][1]=self.uwb_ranges[2],self.uwb_ranges[2]
-        dists[1][3],dists[3][1]=self.uwb_ranges[4],self.uwb_ranges[4]
-        dists[1][4],dists[4][1]=self.uwb_ranges[5],self.uwb_ranges[5]
-        dists[2][3],dists[3][2]=self.uwb_ranges[0],self.uwb_ranges[0]
-        dists[2][4],dists[4][2]=self.uwb_ranges[1],self.uwb_ranges[1]
-        dists[3][4],dists[4][3]=self.uwb_ranges[3],self.uwb_ranges[3]
-        n1 = [1,1,1,1,2,2,2,3,3,4]
-        n2 = [2,3,4,5,3,4,5,4,5,5]
+        # 4,1,2,3,5
+        dists[0][1],dists[1][0]=self.uwb_ranges[0],self.uwb_ranges[0]
+        dists[0][2],dists[2][0]=self.uwb_ranges[1],self.uwb_ranges[1]
+        dists[0][3],dists[3][0]=self.uwb_ranges[2],self.uwb_ranges[2]
+        dists[0][4],dists[4][0]=self.uwb_ranges[3],self.uwb_ranges[3]
+        dists[1][2],dists[2][1]=self.uwb_ranges[4],self.uwb_ranges[4]
+        dists[1][3],dists[3][1]=self.uwb_ranges[5],self.uwb_ranges[5]
+        dists[1][4],dists[4][1]=self.uwb_ranges[6],self.uwb_ranges[6]
+        dists[2][3],dists[3][2]=self.uwb_ranges[7],self.uwb_ranges[7]
+        dists[2][4],dists[4][2]=self.uwb_ranges[8],self.uwb_ranges[8]
+        dists[3][4],dists[4][3]=self.uwb_ranges[9],self.uwb_ranges[9]
+        # uwb_pair        = [(4,1), (4,2), (4,3), (4,5), (1,2), (1,3), (1,5), (2,3),(2,5), (3,5)]
+        # n1 = [1,1,1,1,2,2,2,3,3,4]
+        # n2 = [2,3,4,5,3,4,5,4,5,5]
+        n1 = [1]
+        n2 = [2]
         # uwb_pair   = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
         try:
             # print("11111111111111111111111111111")
-            for xs, (nd1, nd2) in enumerate(zip(n1,n2)):
+            for (nd1, nd2) in zip(n1,n2):
                 # print(f"{nd1},{nd2}")
                 positions = self.positions_uwb(nd1, nd2, uwb_num, dists)
                 all_positions.append(positions)
@@ -386,7 +392,7 @@ class UWBTriangulation(Node) :
             transformed_poses = self.transform(all_positions)
             # print("-------------------")
         
-            sided_poses = self.side(transformed_poses,side_p_count, side_m_count, final_pose_p, final_pose_m)
+            sided_poses = self.side(transformed_poses,side_p_count, side_m_count)
             # print(f"{sided_poses}")
             pos_arr = np.array(sided_poses)
             www = np.array(transformed_poses)
@@ -403,26 +409,36 @@ class UWBTriangulation(Node) :
             # print(f"new_positions:{new_positions}")
 
             # avg_position_all = np.mean(new_positions, axis=0)
-            print(avr_pose_base.shape)
+            # print(len(self.turtles_mocaps))
+            # print(avr_pose_base.shape)
 
             self.relative_pose_cal(self.turtles_mocaps[0], self.turtles_mocaps[1:], self.true_relative_poses)
-            self.pos_estimation.append([self.true_relative_poses[0][0], self.true_relative_poses[0][1],
-                            self.true_relative_poses[1][0], self.true_relative_poses[1][1],
-                            self.true_relative_poses[2][0], self.true_relative_poses[2][1], 
-                            -avr_pose_base[0][0],     -avr_pose_base[0][1], 
-                            -avr_pose_base[1][0],     -avr_pose_base[1][1], 
-                            -avr_pose_base[2][0],     -avr_pose_base[2][1], 
-                            -avr_pose_base[3][0],     -avr_pose_base[3][1],
-                            -avr_pose_base[4][0],     -avr_pose_base[4][1], 
-                             ])
+            # print(self.true_relative_poses)
+            real_tmp, esti_tmp = [], []
+            for inx in range(len(self.turtles_mocaps) - 1):
+                real_tmp.append(self.true_relative_poses[inx][0])
+                real_tmp.append(self.true_relative_poses[inx][1])
+                esti_tmp.append(avr_pose_base[inx+1][0])
+                esti_tmp.append(avr_pose_base[inx+1][1])
+            print(real_tmp+esti_tmp)
+            self.pos_estimation.append(real_tmp+esti_tmp)
+            # self.pos_estimation.append([self.true_relative_poses[0][0], self.true_relative_poses[0][1],
+            #                 self.true_relative_poses[1][0], self.true_relative_poses[1][1],
+            #                 self.true_relative_poses[2][0], self.true_relative_poses[2][1], 
+            #                 -avr_pose_base[0][0],     -avr_pose_base[0][1], 
+            #                 -avr_pose_base[1][0],     -avr_pose_base[1][1], 
+            #                 -avr_pose_base[2][0],     -avr_pose_base[2][1], 
+            #                 -avr_pose_base[3][0],     -avr_pose_base[3][1],
+            #                 -avr_pose_base[4][0],     -avr_pose_base[4][1], 
+            #                  ])
             # print(new_positions)
             # publish pf relative pose
             for i in range(len(turtles[1:])):
                 relative_pose = PoseStamped()
                 relative_pose.header.frame_id = "base_link"
                 relative_pose.header.stamp = self.node.get_clock().now().to_msg()
-                relative_pose.pose.position.x = -avr_pose_base[i+2][1]
-                relative_pose.pose.position.y = -avr_pose_base[i+2][0]
+                relative_pose.pose.position.x = avr_pose_base[i+1][0]
+                relative_pose.pose.position.y = avr_pose_base[i+1][1]
                 # print(f"{-avr_pose_base[i+1][0]},{-avr_pose_base[i+1][1]}"
                 relative_pose.pose.position.z = 0.0
                 relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation

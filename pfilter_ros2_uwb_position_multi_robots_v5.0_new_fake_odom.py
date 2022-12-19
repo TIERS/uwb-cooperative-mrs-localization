@@ -26,14 +26,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import combinations
 
+
+# /home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/recorded_data/20221217/rosbag2_20_06_59
+fake_odom       = True
 with_polyfit    = False
 fuse_name       = ["u", "uv"]
-turtles         = ["5", "1"  , "3", "4"]
+turtles         = ["4", "1", "2"  , "3", "5"]
 spatial_pair    = list(combinations(turtles,2))
+# print(spatial_pair)
+# [('4', '1'), ('4', '2'), ('4', '3'), ('4', '5'), ('1', '2'), ('1', '3'), ('1', '5'), ('2', '3'), ('2', '5'), ('3', '5')]
 # [('5', '1'), ('5', '3'), ('5', '4'), ('1', '3'), ('1', '4'), ('3', '4')]
-uwbs            = ["5", "7"  , "3", "4"]
-uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
-spatial_uwb     = {spatial_pair[0]: 6, spatial_pair[1]: 7, spatial_pair[2]: 8, spatial_pair[3]: 0, spatial_pair[4]: 1, spatial_pair[5]: 3}
+uwbs            = ["4", "1", "2"  , "3", "5"]
+uwb_pair        = [(4,1), (4,2), (4,3), (4,5), (1,2), (1,3), (1,5), (2,3),(2,5), (3,5)]
+# uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
+spatial_uwb     = {spatial_pair[i]: i for i in range(len(uwb_pair))}
+# spatial_uwb     = {spatial_pair[0]: 0, spatial_pair[1]: 1, spatial_pair[2]: 2, spatial_pair[3]: 3, spatial_pair[4]: 4, spatial_pair[5]: 5}
 spatial_dict    = {sp:[] for sp in spatial_pair}
 uwb_odoms       = [(2,1), (3,1), (0,1), (2,3), (0,2), (0,3), (1,0), (2,0), (3,0), (1,0)]
 
@@ -54,18 +61,18 @@ args = parse_args()
 
 # Build folder to save results from different fusion combinations
 if args.poses_save:
-    pos_folder = "./results/pfilter/pos/pos_{}/".format(fuse_name[args.fuse_group])
+    pos_folder = "./results/results_csv/pfilter/pos/pos_{}/".format(fuse_name[args.fuse_group])
     pos_file = pos_folder + 'pos_{}.csv'.format(args.round)
     if not os.path.exists(pos_folder):
         os.makedirs(pos_folder)
 
 if args.images_save:
-    images_save_path = './results/pfilter/images/images_{}/images_{}_{}/'.format(fuse_name[args.fuse_group], fuse_name[args.fuse_group], args.round)
+    images_save_path = './results/results_csv/pfilter/images/images_{}/images_{}_{}/'.format(fuse_name[args.fuse_group], fuse_name[args.fuse_group], args.round)
     if not os.path.exists(images_save_path):
         os.makedirs(images_save_path)
 
 if args.computation_save:
-    computation_save_path = "./results/pfilter/computation/computation_{}/".format(fuse_name[args.fuse_group])
+    computation_save_path = "./results/results_csv/pfilter/computation/computation_{}/".format(fuse_name[args.fuse_group])
     computation_file = computation_save_path + 'computation_time_{}.csv'.format(args.round)
     if not os.path.exists(computation_save_path):
         os.makedirs(computation_save_path)
@@ -92,10 +99,10 @@ class UWBParticleFilter(Node) :
             namespace = '',
             parameters=[
                 ("weights_sigma", 1.2),
-                ("num_particles", 600),
+                ("num_particles", 800),
                 ("uwb_noise", 0.05),
                 ("resample_proportion", 0.01),
-                ("max_pos_delay", 0.1)
+                ("max_pos_delay", 0.2)
             ]
         )
         
@@ -112,7 +119,7 @@ class UWBParticleFilter(Node) :
 
         # all varibles 
         self.num_vision             = 0
-        self.num_states             = 6
+        self.num_states             = 8
         self.counter                = 0
         self.vis_flag               = False
         self.uwb_ranges             = [0.0 for _ in uwb_pair]
@@ -135,25 +142,25 @@ class UWBParticleFilter(Node) :
         # subscribe to uwb ranges 
         self.uwb_subs = [
             self.create_subscription(Range, "/uwb/tof/n_{}/n_{}/distance".format(p[0], p[1]), 
-            self.create_uwb_ranges_cb(i),10) for i, p in enumerate(uwb_pair)]
+            self.create_uwb_ranges_cb(i),qos_profile=self.qos) for i, p in enumerate(uwb_pair)]
         self.get_logger().info("{} UWB ranges received!".format(len(self.uwb_ranges)))
 
         # subscribe to optitrack mocap poses
         self.mocap_subs = [
-            self.create_subscription(PoseStamped, "/vrpn_client_node/turtlebot{}_cap/pose".format(t), 
-            self.create_mocap_pose_cb(i), 10) for i, t in enumerate(turtles)]
+            self.create_subscription(PoseStamped, "/vrpn_client_node/tb0{}/pose".format(t), 
+            self.create_mocap_pose_cb(i), qos_profile=self.qos) for i, t in enumerate(turtles)]
         self.get_logger().info("{} Mocaps poses received!".format(len(self.turtles_mocaps)))
         
         # subscribe to odometries
         self.odom_subs = [
-            self.create_subscription(Odometry, "/cali/turtle0{}/odom".format(t), 
-            self.create_odom_cb(i), 10) for i, t in enumerate(turtles)]
+            self.create_subscription(Odometry, "/turtle0{}/odom".format(t), 
+            self.create_odom_cb(i), qos_profile=self.qos) for i, t in enumerate(turtles)]
         self.get_logger().info("{} odom poses received!".format(len(self.turtles_odoms)))
 
         # subscribe to spatial detections
         self.spatial_subs = [
             self.create_subscription(SpatialDetectionArray, "/turtle0{}/color/yolov4_Spatial_detections".format(t), 
-            self.create_spatial_cb(i), 10) for i, t in enumerate(turtles)]
+            self.create_spatial_cb(i), qos_profile=self.qos) for i, t in enumerate(turtles)]
         self.get_logger().info("{} spatial detections received!".format(len(self.spatial_objects)))
 
         # pf relative poses publishers
@@ -182,6 +189,7 @@ class UWBParticleFilter(Node) :
         true_relative_pos.pose.position.y =  pos.pose.position.y - self.turtles_mocaps[0][1]
         true_relative_pos.pose.position.z = 0.0
         self.real_pose_publishers[i].publish(true_relative_pos)
+        # print(f"turtle: {i}, and pose: {self.turtles_mocaps[i]}")
 
     def create_odom_cb(self, i):
         return lambda odom : self.odom_cb(i, odom)
@@ -231,37 +239,27 @@ class UWBParticleFilter(Node) :
         '''
             Given (Nx2) matrix of positions,
             create N arrays of observations (just one for now)
-            uwb_pair  = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
+            uwb_pair  = [(4,1), (4,2), (4,3), (4,5), (1,2), (1,3), (1,5), (2,3),(2,5), (3,5)]
         '''  
         y = [] 
-        p2 = np.array([[0.0, -7.0]]*x.shape[0])
-        temp = np.array([x[:,0:2] - x[:,2:4], x[:,0:2] - x[:,4:6], x[:,0:2] - p2,
-                        x[:,2:4] - x[:,4:6], x[:,2:4] - p2, x[:,4:6] - p2,
-                        x[:,0:2], x[:,2:4],  x[:,4:6], p2])
+        temp = np.array([x[:,0:2], x[:,2:4], x[:,4:6], x[:,6:8],
+                         x[:,0:2] - x[:,2:4], x[:,0:2] - x[:,4:6], x[:,0:2] - x[:,6:8],
+                         x[:,2:4] - x[:,4:6], x[:,2:4] - x[:,6:8],
+                         x[:,4:6] - x[:,6:8]
+        ])
+
+        x_list = list(combinations([0,1,2,3],2)) 
         y = np.linalg.norm(temp, axis=2)
         if args.fuse_group == 1 and self.vis_flag:
             self.vis_flag = False
-            sp_temp = [spatial_dict[spatial_pair[0]], spatial_dict[spatial_pair[1]],spatial_dict[spatial_pair[2]],
-                                 spatial_dict[spatial_pair[3]], spatial_dict[spatial_pair[4]],spatial_dict[spatial_pair[5]]]
+            sp_temp = [spatial_dict[key] for key in spatial_dict]
             tmp = []
             for sp in range(len(sp_temp)):
-                if len(sp_temp[sp])>0:
-                    if sp < 3:
-                        for _ in sp_temp[sp]:
-                            tmp.append(x[:,2*sp])
-                            tmp.append(x[:,2*sp+1])
-                    elif sp == 3:
-                        for _ in sp_temp[3]:
-                            tmp.append(x[:,2] - x[:,0])
-                            tmp.append(x[:,3] - x[:,1])
-                    elif sp == 4:
-                        for _ in sp_temp[4]:
-                            tmp.append(x[:,4] - x[:,0])
-                            tmp.append(x[:,5] - x[:,1])
-                    elif sp == 5:
-                        for _ in sp_temp[5]:
-                            tmp.append(x[:,4] - x[:,2])
-                            tmp.append(x[:,5] - x[:,3])   
+                # print(f"sp:{sp}, {len(sp_temp[sp])}")
+                for _ in sp_temp[sp]:
+                    tmp.append(temp[sp][:,0])
+                    tmp.append(temp[sp][:,1])
+            print(f"tmp size: {len(tmp)}")
             y = np.concatenate((y, np.array(tmp)), axis=0)
         return np.transpose(y)
 
@@ -301,12 +299,20 @@ class UWBParticleFilter(Node) :
 
 
     def update_particle_odom(self):
-        for i in range(1, len(turtles)):
-            self.particle_odom[2*(i-1)] = (self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
-                                    (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x))
-            self.particle_odom[2*(i-1)+1] = (self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
-                                    (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y))
-        self.last_turtles_odoms = np.copy(self.turtles_odoms)
+        if fake_odom:
+            for i in range(1, len(turtles)):
+                self.particle_odom[2*(i-1)] = self.fake_odom[i][0] - self.fake_last_odom[i][0] - \
+                                        (self.fake_odom[0][0] - self.fake_last_odom[0][0])
+                self.particle_odom[2*(i-1)+1] = self.fake_odom[i][1] - self.fake_last_odom[i][1] - \
+                                        (self.fake_odom[0][1] - self.fake_last_odom[0][1])
+            self.fake_last_odom = np.copy(self.fake_odom)
+        else:
+            for i in range(1, len(turtles)):
+                self.particle_odom[2*(i-1)] = (self.turtles_odoms[i].pose.pose.position.x - self.last_turtles_odoms[i].pose.pose.position.x - \
+                                        (self.turtles_odoms[0].pose.pose.position.x - self.last_turtles_odoms[0].pose.pose.position.x))
+                self.particle_odom[2*(i-1)+1] = (self.turtles_odoms[i].pose.pose.position.y - self.last_turtles_odoms[i].pose.pose.position.y - \
+                                        (self.turtles_odoms[0].pose.pose.position.y - self.last_turtles_odoms[0].pose.pose.position.y))
+            self.last_turtles_odoms = np.copy(self.turtles_odoms)
 
     def relative_poses_pub(self):
         # publish pf relative pose
@@ -322,8 +328,12 @@ class UWBParticleFilter(Node) :
 
     def relative_poses_save(self):
         # cal true or predicted relative poses
-        self.relative_pose_cal(self.turtles_mocaps[0][0:2], self.turtles_mocaps[1:][0:2], self.true_relative_poses)
-        pf_relative_poses = [self.pf.mean_state[0], self.pf.mean_state[1], self.pf.mean_state[2], self.pf.mean_state[3], self.pf.mean_state[4], self.pf.mean_state[5]]
+        # for mocap in self.turtles_mocaps:
+        # print(f"mocap 0: {self.turtles_mocaps[0]}")
+        # print(f"mocap 1-4: {self.turtles_mocaps[1:]}")
+        self.relative_pose_cal(self.turtles_mocaps[0], self.turtles_mocaps[1:], self.true_relative_poses)
+        # print(f"true: {self.turtles_mocaps[1:]}")
+        pf_relative_poses = [self.pf.mean_state[i] for i in range(self.num_states)]
         relative_poses = np.append(np.hstack(self.true_relative_poses), pf_relative_poses).tolist()
         # save groundtruth poses and calcuated poses to csv
         self.pos_estimation.append(relative_poses)
@@ -363,13 +373,13 @@ class UWBParticleFilter(Node) :
         new_meas = np.array([])
         vis_meas_list = []
         if args.fuse_group == 1:
-            for i, p in enumerate(spatial_pair):
+            for p in spatial_pair:
                 spatial_dict[p].clear()
                 if self.spatial_objects[p[0]].size > 0 and self.spatial_objects[p[1]].size > 0:
                     for obj0 in self.spatial_objects[p[0]]:
                         for obj1 in self.spatial_objects[p[1]]:
                             vis_meas = self.update_range_from_object_pose(obj0, obj1)
-                            if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.10:
+                            if math.fabs(vis_meas -  uwb_ranges[spatial_uwb[p]]) < 0.15:
                                 self.num_vision+=1
                                 self.vis_flag = True
                                 spatial_dict[p].extend([[obj0, obj1]])
@@ -377,6 +387,7 @@ class UWBParticleFilter(Node) :
                                 vis_meas_list.append(obj1.position.x - obj0.position.x)
                                 vis_meas_list.append(obj1.position.y - obj0.position.y)
             if len(vis_meas_list) > 0:
+                print(f"vis_meas_list: {vis_meas_list}")
                 new_meas = np.append(uwb_ranges, [vis_meas_list])
             else:
                 new_meas = np.array(uwb_ranges)
@@ -397,7 +408,7 @@ class UWBParticleFilter(Node) :
     def fake_odom_fun(self):
         # self.get_logger().info("Set Fake Odom.")
         for t, t_cap in enumerate(self.turtles_mocaps):
-            mean, std = 0.0, 0.05
+            mean, std = 0.0, 0.02
             self.fake_odom[t][0] = t_cap[0] + np.random.normal(mean, std)
             self.fake_odom[t][1] = t_cap[1] + np.random.normal(mean, std)
             temp_odom = Odometry()
@@ -411,12 +422,14 @@ class UWBParticleFilter(Node) :
             Upadate particle filter
         '''
         start = time.time_ns() / (10 ** 9)
-        if all(self.turtles_odoms_flag) and  not self.pf_init_flag:
+        # print(f"all turtles odom:{self.turtles_odoms_flag}")
+        if all(self.turtles_odoms_flag[1:]) and  not self.pf_init_flag:
             self.pf_filter_init()
             self.get_logger().info("UWB PF initialized. Estimating position from UWB and odom.")
 
         if self.pf_init_flag:
-            self.fake_odom_fun()
+            if fake_odom:
+                self.fake_odom_fun()
             # set measurements
             # check uwb measurements
             if with_polyfit:
@@ -432,6 +445,7 @@ class UWBParticleFilter(Node) :
             ## check vision measurements
             # new_meas = np.array([])
             new_meas = self.get_measurements(uwb_ranges)
+            # print(f"new measurement shape: {new_meas.shape}")
 
             # print(new_meas)
             self.update_particle_odom()
