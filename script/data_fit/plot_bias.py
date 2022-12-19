@@ -9,7 +9,7 @@ import numpy as np
 #Maybe check this later
 #https://www.askpython.com/python/examples/polynomial-regression-in-python
 
-npzfile = np.load('data/bias_estimation_2robots_uwb.npz')
+npzfile = np.load('data/20221022_cali_4robots_data_02.npz')
 
 opti_distance_np = npzfile['opti_distance_np'] 
 uwb_range_np = npzfile['uwb_range_np']
