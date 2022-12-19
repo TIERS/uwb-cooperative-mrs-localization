@@ -96,7 +96,7 @@ The errors will be in
 #### Run In a Loop
 Run a script that can generate all the results of all rounds of different fusing group.
 ```
-python script/run_filter.py
+python script/run_filter_v1.1_clean_multi.py
 ```
 
 

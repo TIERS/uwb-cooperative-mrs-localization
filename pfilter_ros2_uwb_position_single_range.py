@@ -30,16 +30,6 @@ from itertools import combinations
 # [('5', '1'), ('5', '3'), ('5', '4'), ('1', '3'), ('1', '4'), ('3', '4')]
 # uwb_pair        = [(3,7), (4,7), (2,7), (3,4), (2,3), (2,4), (7,5), (3,5),(4,5), (2,5)]
 # uwbs            = ["5", "7"  , "3", "4"]
-
-fuse_name       = ["u", "uv"]
-
-turtles         = ["5", "4"]
-spatial_pair    = list(combinations(turtles,2))
-uwbs            = ["5","4"]
-uwb_pair        = [(4,5)]
-spatial_uwb     = {spatial_pair[0]: 0}
-spatial_dict    = {sp:[] for sp in spatial_pair}
-
 #  get parameters from terminal
 def parse_args():
     parser = argparse.ArgumentParser(description='Options to control relative localization with only UWB, assisit with Vision, and all if vision available')
@@ -49,15 +39,40 @@ def parse_args():
     parser.add_argument('--computation_save', type=bool, default=True, help='choose to save the computation time with pf')
     parser.add_argument('--with_polyfit', type=bool, default=False, help="whether use polyfit to uwb")
     parser.add_argument('--fuse_group', type=int, default=0, help='0: only UWB in PF, 1: uwb and vision together')
+    parser.add_argument('--robot_id', type=int, default=0, help='0: robot1, 1: robot2, 2: robot3')
     parser.add_argument('--round', type=int, default=0, help='indicate which round the pf will run on a recorded data')
     args = parser.parse_args()
     return args
 
 args = parse_args()
 
+
+
+fuse_name       = ["u", "uv"]
+if args.robot_id == 0:
+    turtles = ["5", "1"]
+    uwbs            = ["7","5"]
+    uwb_pair        = [(7,5)]
+
+if args.robot_id == 1:
+    turtles = ["5", "3"]
+    uwbs            = ["3","5"]
+    uwb_pair        = [(3,5)]
+
+if args.robot_id == 2:
+    turtles = ["5", "4"]
+    uwbs            = ["4","5"]
+    uwb_pair        = [(4,5)]
+
+
+spatial_pair    = list(combinations(turtles,2))
+spatial_uwb     = {spatial_pair[0]: 0}
+spatial_dict    = {sp:[] for sp in spatial_pair}
+
+
 # Build folder to save results from different fusion combinations
 if args.poses_save:
-    pos_folder = "./results/pfilter/pos/pos_{}/".format(fuse_name[args.fuse_group])
+    pos_folder = "./results/single/pfilter/pos/pos_{}/".format(fuse_name[args.fuse_group])
     if args.with_polyfit:
         pos_file = pos_folder + 'pos_{}_{}.csv'.format("poly", args.round)
     else:
@@ -66,13 +81,13 @@ if args.poses_save:
         os.makedirs(pos_folder)
 
 if args.images_save:
-    images_save_path = './results/pfilter/images/images_{}/images_{}_{}/'.format(fuse_name[args.fuse_group], fuse_name[args.fuse_group], args.round)
+    images_save_path = './results/single/pfilter/images/images_{}/images_{}_{}/'.format(fuse_name[args.fuse_group], fuse_name[args.fuse_group], args.round)
     if not os.path.exists(images_save_path):
         os.makedirs(images_save_path)
 
 if args.computation_save:
-    computation_save_path = "./results/pfilter/computation/computation_{}/".format(fuse_name[args.fuse_group])
-    computation_file = computation_save_path + 'computation_time_{}.csv'.format(args.round)
+    computation_save_path = "./results/single/pfilter/computation/computation_{}/".format(fuse_name[args.fuse_group])
+    computation_file = computation_save_path + 'computation_time_robot{}_{}.csv'.format(args.robot_id, args.round)
     if not os.path.exists(computation_save_path):
         os.makedirs(computation_save_path)
 
@@ -166,12 +181,12 @@ class UWBParticleFilter(Node) :
         if self.withpolyfit:
             # pf relative poses publishers
             self.real_pose_publishers = [self.create_publisher(PoseStamped, '/real_turtle0{}_pose'.format(t), 10) for t in turtles]
-            self.relative_pose_publishers = [self.create_publisher(PoseStamped, '/pf_poly_turtle0{}_pose'.format(t), 10) for t in turtles[1:]]
+            self.relative_pose_publishers = [self.create_publisher(PoseStamped, '/pf_poly_turtle0{}_pose'.format(t), 10) for t in turtles]
             # self.relative_pose_publishers.append(self.create_publisher(PoseStamped, '/pf_turtle02_pose', 10))
         else:
              # pf relative poses publishers
             self.real_pose_publishers = [self.create_publisher(PoseStamped, '/real_turtle0{}_pose'.format(t), 10) for t in turtles]
-            self.relative_pose_publishers = [self.create_publisher(PoseStamped, '/pf_turtle0{}_pose'.format(t), 10) for t in turtles[1:]]
+            self.relative_pose_publishers = [self.create_publisher(PoseStamped, '/pf_turtle0{}_pose'.format(t), 10) for t in turtles]
             # self.relative_pose_publishers.append(self.create_publisher(PoseStamped, '/pf_turtle02_pose', 10))           
 
         self.fake_odom_publishers = [self.create_publisher(Odometry, '/fake_t0{}_odom'.format(t), 10) for t in turtles]
@@ -304,16 +319,16 @@ class UWBParticleFilter(Node) :
         self.last_turtles_odoms = np.copy(self.turtles_odoms)
 
     def relative_poses_pub(self):
-        # publish pf relative pose
-        for i in range(len(turtles[1:])):
-            relative_pose = PoseStamped()
-            relative_pose.header.frame_id = "base_link"
-            relative_pose.header.stamp = self.get_clock().now().to_msg()
-            relative_pose.pose.position.x = self.pf.mean_state[2*i]
-            relative_pose.pose.position.y = self.pf.mean_state[2*i+1]
-            relative_pose.pose.position.z = 0.0
-            relative_pose.pose.orientation = self.turtles_odoms[i].pose.pose.orientation
-            self.relative_pose_publishers[i].publish(relative_pose)   
+        # # publish pf relative pose
+        # for i in range(len(turtles[1:])):
+        relative_pose = PoseStamped()
+        relative_pose.header.frame_id = "base_link"
+        relative_pose.header.stamp = self.get_clock().now().to_msg()
+        relative_pose.pose.position.x = self.pf.mean_state[0]
+        relative_pose.pose.position.y = self.pf.mean_state[1]
+        relative_pose.pose.position.z = 0.0
+        relative_pose.pose.orientation = self.turtles_odoms[1].pose.pose.orientation
+        self.relative_pose_publishers[1].publish(relative_pose)   
 
     def relative_poses_save(self):
         # cal true or predicted relative poses
