@@ -1,6 +1,7 @@
 from evo.tools import log
 log.configure_logging(verbose=True, debug=True, silent=False)
 
+import os
 import pprint
 import numpy as np
 
@@ -8,7 +9,7 @@ from evo.tools import plot
 import matplotlib.pyplot as plt
 
 import tikzplotlib as tikz
-
+import shutil
 # temporarily override some package settings
 from evo.tools.settings import SETTINGS
 SETTINGS.plot_usetex = False
@@ -26,6 +27,13 @@ from evo.core import sync
 from evo.core import metrics
 
 from rosbags.rosbag2 import Reader as Rosbag2Reader
+
+fig_img_folder = "./results/figs/img"
+fig_tex_folder = "./results/figs/tex"
+if not os.path.exists(fig_img_folder):
+    os.makedirs(fig_img_folder)
+if not os.path.exists(fig_tex_folder):
+    os.makedirs(fig_tex_folder)
 
 bag_name = "20221217/rosbag2_20_06_59"
 # bag_name = "20221217/rosbag2_20_09_08/"
@@ -120,8 +128,8 @@ for i in range(4):
     plot.trajectories(fig, traj_by_label, plot.PlotMode.xy)
 
     FILENAME = "robot_{}_traj".format(i) 
-    plt.savefig('{}.png'.format(FILENAME), bbox_inches='tight')   
-    tikz.save("{}.tex".format(FILENAME)) 
+    plt.savefig('./results/figs/img/{}.png'.format(FILENAME), bbox_inches='tight')   
+    tikz.save("./results/figs/tex/{}.tex".format(FILENAME)) 
 
     plt.show()
 

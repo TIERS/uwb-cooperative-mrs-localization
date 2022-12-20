@@ -6,19 +6,12 @@ import shutil
 import subprocess as sp
 import threading
 import numpy as np
-num_rounds = 1
 import os, psutil
 import multiprocessing as mlp
 
+num_rounds = 1
 fusion = ["uwb", "uwb_vision"]
 print("------ START ------")
-
-
-# bag_file = "cali_4robots_data_02"
-# bag_file = "cali_4robots_data_04"
-# bag_file = "4robots_data_07"
-
-# global tri_mems
 
 with mlp.Manager() as manager:
 
@@ -34,8 +27,6 @@ with mlp.Manager() as manager:
 
     bag_files = ["20221217/rosbag2_20_06_59"]
 
-    # bag_file = "cali_4robots_data_02"
-    # bag_file = "cali_4robots_data_04"
     # bag_file = "4robots_data_07"
     # bag_files = ["20221011/cali_4robots_data_02"]
     # bag_files = ["20221011/shortbag"]
@@ -58,7 +49,7 @@ with mlp.Manager() as manager:
 
                 if os.path.exists("./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)):
                     shutil.rmtree("./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)) 
-                time.sleep(75)
+                time.sleep(10)  
                 # time.sleep(150)
                 p3 = sp.Popen(["ros2", "bag", "record",  "/tri_turtle01_pose", "/tri_turtle02_pose", "/tri_turtle03_pose", "/tri_turtle05_pose", "/real_turtle01_pose", "/real_turtle02_pose", "/real_turtle03_pose",
                         "/real_turtle04_pose", "/real_turtle05_pose", "/pf_turtle01_pose","/pf_turtle02_pose","/pf_turtle03_pose", "/pf_turtle05_pose", "-o", "./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)], stdout=sp.PIPE, stderr=sp.STDOUT)
@@ -72,15 +63,10 @@ with mlp.Manager() as manager:
                 tri.start()
                 pf.start()
                 p0.wait()
-                # global tri_mems
-                # global pf_mems
                 # print(f"---- {pf_que.get()}")
                 tri.terminate()
                 pf.terminate()
                 
-                # print(f"////// tri_mems: {tri_mems}")
-                # print(f"////// pf_mems: {pf_mems}")
-
                 np.savetxt("./results/results_csv/triangulation/computation/mem_tri_{}.csv".format(r), np.array(tri_mems))
                 np.savetxt("./results/results_csv/pfilter/computation/mem_pf_{}_{}.csv".format(fus, r), np.array(pf_mems))
                 p1.send_signal(signal.SIGINT)

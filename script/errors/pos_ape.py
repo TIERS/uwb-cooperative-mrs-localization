@@ -107,7 +107,7 @@ dx = "robots"; dy = "ape_value"; dhue = "approaches"; pal = "Set2"; sigma = .2; 
 f, ax = plt.subplots()
 
 ax=pt.RainCloud(x = dx, y = dy, hue = dhue, data = df, palette = pal, orient=ort, bw = sigma, width_viol = .6,
-                ax = ax, alpha = .5,jitter=0, dodge = True, move = .25) #pointplot = True,
+                ax = ax, alpha = .5, jitter=0, dodge = True, move = .25) #pointplot = True,
 
 
 plt.title("State Estimation Error of Triangulations & Particle filters\n on UWB Ranges Fused With Spatial Detection")
@@ -135,8 +135,8 @@ ax.grid(which='major', alpha=0.7)
 plt.xticks(np.array([0,1,2,3]), np.array(["robot_1", "robot_2", "robot_3", "robot_4"]))
 
 FILENAME = "raincloud_plot_ape" 
-plt.savefig('{}.png'.format(FILENAME), bbox_inches='tight')   
-tikz.save("{}.tex".format(FILENAME)) 
+plt.savefig('./results/figs/img/{}.png'.format(FILENAME), bbox_inches='tight')   
+tikz.save("./results/figs/tex/{}.tex".format(FILENAME)) 
 plt.show()
 # plt.yscale('log')
 # plt.legend()
