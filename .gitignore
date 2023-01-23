@@ -1,5 +1,7 @@
 /rosbag
-
+script/errors/__pycache__*
+results
+ape
 
 
 
