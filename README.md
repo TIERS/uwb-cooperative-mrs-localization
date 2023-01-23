@@ -152,41 +152,14 @@ currently mainly run the code in
 script/errors/
 ```
 
-#### Trajectory estimation
-Best results for now.
-##### Triangulation state estimation
-<!-- ![](./demos/Figure_2.png) -->
+#### Single UWB range
+APE             |  Trajectory         
+:-------------------------:|:-------------------------: 
+![](./demos/ape_single.png)  |  ![](./demos/single_traj.png)
 
-##### Centralized PF state estimation
-###### Trajectories
-only UWB ranges             |  UWB ranges or spatial detection          |  UWB ranges and spatial detection
-:-------------------------:|:-------------------------: |:-------------------------:
-![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
+#### Multiple UWB ranges
+#### APE                 
+![](./demos/ape_multi.png)  
 
-###### Errors
-![](./demos/raincloud_plot_ape.png)
-
-## TODO - Experiments
-- [ ] add polyfit uwb bia value to the data input.
-- [x] run single pf in each robot.
-- [x] have a centeralized pf. 
-- [x] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
-<!-- ![90%](https://progress-bar.dev/90) -->
-- [x] add triangulation code and results.
-- [x] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
-- [x] calibrate the odom data for collected data on 13th Oct
-- [x] improve the codes.
-- [x] modify the approaches of adding vision spatial detections. (ranges)
-- [x] increase the pf processing frequency to check the performance
-- [x] how to add spatial detection coordinates into the pf (discussion needed)
-- [x] set the pf initial distribution with the first odometry data
-- [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
-
-## TODO - Experimental Results
-- [ ] Single measurement --> 2 robots
-- [ ] 3 robots moving
-        (1) circles (difference speed, size, and direction)
-        (2) different patterns
-- [ ] Memery Check
-- [ ] Navigation Performance
-- [ ] GPU ?
+#### Trajectories
+![](./demos/multi_traj.png)
