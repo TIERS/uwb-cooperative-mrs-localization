@@ -2,26 +2,32 @@
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 ## Installation 
-### Intel PC
-<!-- TODO: add installation approaches -->
-ros2 galactic
+1. ros2 galactic \
+Install ros2 galactic following the instruction [here](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
+2. Eclipse Zenoh \
+Add Eclipse Zenoh private repository to the sources list:
 
-pfilter
+       
+        echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | sudo tee -a /etc/apt/sources.list > /dev/null
+        sudo apt update
+        
 
-numpy
+    Then either: \
+     install the plugin with: `sudo apt install zenoh-plugin-dds`.\
+     install the standalone executable with:  `sudo apt install zenoh-bridge-dds`.
+3. pfilter
 
-depthai_ros_msgs
+        pip install pfilter
 
-matplotlib
+4. depthai_ros_msgs
 
-### Nvidia Jetson Nano 
-<!-- TODO:add installation approaches -->
+        sudo apt install ros-foxy-depthai-ros-msgs
+5. Others
+
+        pip install numpy matplotlib
 
 
-### Raspberry
-
-
-## Data
+<!-- ## Data
 ### Recorded ros2 bags from 2022/09/23. 
 
 2robots_move_one_static: turtlebot4 and turtlebot1 was moving a circle while turltebot3 static. 
@@ -62,23 +68,28 @@ Topics can be seen as follows.
 /vrpn_client_node/turtlebot3_cap/pose
 /vrpn_client_node/turtlebot4_cap/pose
 /vrpn_client_node/turtlebot5_cap/pose
-```
+``` -->
 
 ## Run
-### Positioning
-#### Run Once
-currently, if you only want to run one round of each filter,  mainly run the code in 
+<!-- ### Positioning -->
+<!-- #### Run Once -->
+currently, if you only want to run one round of each filter.
+For multiple robots, 
 ```
-pfilter_ros2_uwb_position_multi_robots.py --fuse_group 0 --round 0
+pf_ros2_multi_ulv.py --fuse_group 0 --with_model False 
 ```
 Arguments meaning(currently not used):
 ```
 --fuse_group 
-0: only uwb
-1: uwb or vision
-2: uwb and vision
+  0: only uwb
+  1: uwb and vision
 
---round  # this indicates how many rounds that your filter will run for each fusing group.
+--with_model False  # enable the LSTM ranging error estimation
+```
+
+For single UWB range.
+```
+pf_ros2_single_ulv.py --fuse_group 0 --with_model False
 ```
 
 After running this code, the images of particles will be saved in 
@@ -93,14 +104,14 @@ The errors will be in
 ```
 ../errors/
 ```
-#### Run In a Loop
+<!-- #### Run In a Loop
 Run a script that can generate all the results of all rounds of different fusing group.
 ```
 python script/run_filter_v1.1_clean_multi.py
-```
+``` -->
 
 
-### Calibration
+<!-- ### Calibration
 #### odom 
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
 
@@ -140,20 +151,17 @@ It will save the images in
 
 #### stereo camera
 <!-- FIXME: bias are big, needs to check the code -->
-currently mainly run the code in 
+<!-- currently mainly run the code in 
 ```
 script/camera_opti.py
-```
+``` --> -->
 
 ## Results visualization
-<!-- TODO: violin plot or rainbow plot -->
 currently mainly run the code in 
 ```
 script/errors/
 ```
-
 ### Single UWB range
-
 APE             |  Trajectory         
 :-------------------------:|:-------------------------: 
 ![](./demos/ape_single.png)  |  ![](./demos/single_traj.png)
