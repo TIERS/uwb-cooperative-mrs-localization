@@ -17,7 +17,7 @@ import itertools
 import ptitprince as pt
 
 
-folder_name = "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/ape/"
+folder_name = "/home/xianjia/Workspace/Projects/uwb_ranging_refine_with_spatial_detection/results/ape"
 
 ## get the file name of all above folders
 files = [

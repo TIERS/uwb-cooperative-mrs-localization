@@ -2,26 +2,28 @@
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 ## Installation 
-### Intel PC
-<!-- TODO: add installation approaches -->
-ros2 galactic
+1. ros2 galactic \
+Install ros2 galactic following the instruction [here](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
+2. Eclipse Zenoh \
+Add Eclipse Zenoh private repository to the sources list:
 
-pfilter
+       
+        echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | sudo tee -a /etc/apt/sources.list > /dev/null
+        sudo apt update
+        
 
-numpy
+    Then either: \
+     install the plugin with: `sudo apt install zenoh-plugin-dds`.\
+     install the standalone executable with:  `sudo apt install zenoh-bridge-dds`.
+3. depthai_ros_msgs
 
-depthai_ros_msgs
+        sudo apt install ros-foxy-depthai-ros-msgs
+4. Others
 
-matplotlib
-
-### Nvidia Jetson Nano 
-<!-- TODO:add installation approaches -->
-
-
-### Raspberry
+        pip install numpy matplotlib pfilter
 
 
-## Data
+<!-- ## Data
 ### Recorded ros2 bags from 2022/09/23. 
 
 2robots_move_one_static: turtlebot4 and turtlebot1 was moving a circle while turltebot3 static. 
@@ -62,23 +64,27 @@ Topics can be seen as follows.
 /vrpn_client_node/turtlebot3_cap/pose
 /vrpn_client_node/turtlebot4_cap/pose
 /vrpn_client_node/turtlebot5_cap/pose
-```
+``` -->
 
 ## Run
-### Positioning
-#### Run Once
-currently, if you only want to run one round of each filter,  mainly run the code in 
+### Proposed Particle Filter Approach
+currently, if you only want to run one round of each filter.
+For multiple robots, 
 ```
-pfilter_ros2_uwb_position_multi_robots.py --fuse_group 0 --round 0
+python3 pf_ros2_multi_ulv.py --fuse_group 0 --with_model False 
 ```
 Arguments meaning(currently not used):
 ```
 --fuse_group 
-0: only uwb
-1: uwb or vision
-2: uwb and vision
+  0: only uwb
+  1: uwb and vision
 
---round  # this indicates how many rounds that your filter will run for each fusing group.
+--with_model False  # enable the LSTM ranging error estimation
+```
+
+For single UWB range.
+```
+pf_ros2_single_ulv.py --fuse_group 0 --with_model False
 ```
 
 After running this code, the images of particles will be saved in 
@@ -93,14 +99,19 @@ The errors will be in
 ```
 ../errors/
 ```
-#### Run In a Loop
+
+### Triangulation
+```
+python3 tri_ros2_ul.py --with_model False
+```
+<!-- #### Run In a Loop
 Run a script that can generate all the results of all rounds of different fusing group.
 ```
 python script/run_filter_v1.1_clean_multi.py
-```
+``` -->
 
 
-### Calibration
+<!-- ### Calibration
 #### odom 
 The odom has translations compared with its global position. So we need to calibrate it and republish the topics to:
 
@@ -140,53 +151,32 @@ It will save the images in
 
 #### stereo camera
 <!-- FIXME: bias are big, needs to check the code -->
-currently mainly run the code in 
+<!-- currently mainly run the code in 
 ```
 script/camera_opti.py
-```
+``` --> 
 
-### Results visualization
-<!-- TODO: violin plot or rainbow plot -->
+## Results visualization
 currently mainly run the code in 
 ```
 script/errors/
 ```
 
-#### Trajectory estimation
-Best results for now.
-##### Triangulation state estimation
-<!-- ![](./demos/Figure_2.png) -->
+### Single UWB range
+APE             |  Trajectory         
+:-------------------------:|:-------------------------: 
+![](./demos/ape_single.png)  |  ![](./demos/single_traj.png)
 
-##### Centralized PF state estimation
-###### Trajectories
-only UWB ranges             |  UWB ranges or spatial detection          |  UWB ranges and spatial detection
-:-------------------------:|:-------------------------: |:-------------------------:
-![](./demos/centralized_pf_u.png)  |  ![](./demos/centralized_pf_u_v.png)|![](./demos/centralized_pf_uv.png)
 
-###### Errors
-![](./demos/raincloud_plot_ape.png)
+### Multiple UWB ranges
 
-## TODO - Experiments
-- [ ] add polyfit uwb bia value to the data input.
-- [x] run single pf in each robot.
-- [x] have a centeralized pf. 
-- [x] improve visualization of results, for examples, using violin plot to show the errors, instead of x,y errors, using ATE
-<!-- ![90%](https://progress-bar.dev/90) -->
-- [x] add triangulation code and results.
-- [x] collect new data on 13th Oct, 2022 including different moving patterns, for example, line, circle, rectangle.
-- [x] calibrate the odom data for collected data on 13th Oct
-- [x] improve the codes.
-- [x] modify the approaches of adding vision spatial detections. (ranges)
-- [x] increase the pf processing frequency to check the performance
-- [x] how to add spatial detection coordinates into the pf (discussion needed)
-- [x] set the pf initial distribution with the first odometry data
-- [ ] run navigation based on the uwb pf localization. (final step for the paper experiment)
+#### APE                 
+![](./demos/ape_multi.png)  
 
-## TODO - Experimental Results
-- [ ] Single measurement --> 2 robots
-- [ ] 3 robots moving
-        (1) circles (difference speed, size, and direction)
-        (2) different patterns
-- [ ] Memery Check
-- [ ] Navigation Performance
-- [ ] GPU ?
+#### Trajectories
+![](./demos/multi_traj.png)
+
+
+## Acknowledgement
+This research work is supported by the Academy of Finland’s AeroPolis project (Grant No. 348480), and by the R3Swarms project funded by the Secure Systems Research Center (SSRC), Technology Innovation Institute (TII).
+
