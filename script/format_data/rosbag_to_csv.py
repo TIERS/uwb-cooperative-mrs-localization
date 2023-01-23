@@ -72,7 +72,7 @@ class BiasEstimation(Node) :
                             [7,5],
                             [7,8]]
 
-        self.turtlebot_num=[1,3,4,5]
+        self.turtlebot_num=[1,2,3,4,5]
 
         #Subscribers
 
@@ -89,7 +89,7 @@ class BiasEstimation(Node) :
             # self.mocap_pose[bot] = []
             # self.mocap_ori[bot] = []
             # self.mocap_pose[k].append('mocap_pose{}'.format(k))
-            pose_sub = self.create_subscription(PoseStamped,'/vrpn_client_node/turtlebot{}_cap/pose'.format(bot),self.cbcap(bot), 10)
+            pose_sub = self.create_subscription(PoseStamped,'/vrpn_client_node/tb0{}/pose'.format(bot),self.cbcap(bot), qos_profile=self.qos)
             self.pos_subscribers.append(pose_sub)
 
         #Timer
@@ -109,6 +109,7 @@ class BiasEstimation(Node) :
         def cap_pose(msg) :
             self.mocap_pose[k]=[msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
             self.mocap_ori[k]=msg.pose.orientation
+            # print(f"mocap: {k}")
         return cap_pose
 
     def euler_from_quaternion(self,pose):
@@ -142,7 +143,7 @@ class BiasEstimation(Node) :
 
     def timer_save(self): # for updating measurements
         if self.check: 
-            print()
+            print('------------------------')
             # print(self.uwb_ranges)
             # print(self.mocap_pose)
             # print(self.mocap_ori)
@@ -154,25 +155,25 @@ class BiasEstimation(Node) :
                 mocap_range = np.linalg.norm(np.array(self.mocap_pose[pairs[0]])-np.array(self.mocap_pose[pairs[1]]))
                 uwb_comb="{}{}".format(pairs[0],pairs[1])
 
-                #######
-                #uwb 7 is in turtlebot 1
-                #uwb 8 is in trutlebot 2
-                # print(uwb_comb)
-                uwb_comb_mod=uwb_comb.replace("1","7")
-                # print(uwb_comb)
-                if(uwb_comb_mod=="73"):
-                    uwb_comb_mod="37"
-                    # print(uwb_comb)
-                if(uwb_comb_mod=="74"):
-                    uwb_comb_mod="47"
-                    # print(uwb_comb)
+                # #######
+                # #uwb 7 is in turtlebot 1
+                # #uwb 8 is in trutlebot 2
+                # # print(uwb_comb)
+                # uwb_comb_mod=uwb_comb.replace("1","7")
+                # # print(uwb_comb)
+                # if(uwb_comb_mod=="73"):
+                #     uwb_comb_mod="37"
+                #     # print(uwb_comb)
+                # if(uwb_comb_mod=="74"):
+                #     uwb_comb_mod="47"
+                #     # print(uwb_comb)
 
-                # print(uwb_comb_mod)
+                # # print(uwb_comb_mod)
 
-                # print(self.uwb_ranges[uwb_comb_mod],mocap_range)
+                # # print(self.uwb_ranges[uwb_comb_mod],mocap_range)
 
                 
-                error=self.uwb_ranges[uwb_comb_mod]-mocap_range
+                error=self.uwb_ranges[uwb_comb]-mocap_range
                 # print(error)
 
                 # print(self.mocap_ori[1])
@@ -183,7 +184,7 @@ class BiasEstimation(Node) :
                 data=[  timestamp,
                         pairs[0],
                         pairs[1],
-                        self.uwb_ranges[uwb_comb_mod],
+                        self.uwb_ranges[uwb_comb],
                         mocap_range,
                         self.euler_from_quaternion(self.mocap_ori[pairs[0]]),
                         self.euler_from_quaternion(self.mocap_ori[pairs[1]]),
@@ -198,7 +199,7 @@ class BiasEstimation(Node) :
             # self.data_save_np=np.array(self.data_save)
             # print(self.data_save_np)
 
-            np.savetxt("test.csv", self.data_save,fmt=('%s'), header="timestamp;node1;node2;uwb_range;mocap_range;tb_node1_yaw;tb_node2_yaw;error",delimiter=';',comments='')
+            np.savetxt("train_newdata.csv", self.data_save,fmt=('%s'), header="timestamp,node1,node2,uwb_range,mocap_range,tb_node1_yaw,tb_node2_yaw,error",delimiter=',',comments='')
 
         
         
