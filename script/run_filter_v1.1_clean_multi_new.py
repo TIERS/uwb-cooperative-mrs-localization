@@ -4,7 +4,6 @@ import tqdm
 import signal
 import shutil
 import subprocess as sp
-import threading
 import numpy as np
 import os, psutil
 import multiprocessing as mlp
@@ -49,7 +48,7 @@ with mlp.Manager() as manager:
 
                 if os.path.exists("./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)):
                     shutil.rmtree("./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)) 
-                time.sleep(10)  
+                time.sleep(30)  
                 # time.sleep(150)
                 p3 = sp.Popen(["ros2", "bag", "record",  "/tri_turtle01_pose", "/tri_turtle02_pose", "/tri_turtle03_pose", "/tri_turtle05_pose", "/real_turtle01_pose", "/real_turtle02_pose", "/real_turtle03_pose",
                         "/real_turtle04_pose", "/real_turtle05_pose", "/pf_turtle01_pose","/pf_turtle02_pose","/pf_turtle03_pose", "/pf_turtle05_pose", "-o", "./results/result_bags/{}/result_bag_{}_{}".format(bag_file, i, r)], stdout=sp.PIPE, stderr=sp.STDOUT)

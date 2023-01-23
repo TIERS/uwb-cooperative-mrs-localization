@@ -44,14 +44,16 @@ pf_poses_topics   = ["/pf_turtle01_pose", "/pf_turtle02_pose", "/pf_turtle03_pos
 real_poses, uv_real_poses, tri_poses, pf_u_poses, pf_uv_poses   = [], [], [], [], []
 align_tri_poses, align_pf_u_poses, align_pf_uv_poses   = [], [], []
 
-with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/result_bags/{bag_name}/result_bag_0_0") as reader:
+# with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/result_bags/{bag_name}/result_bag_0_0") as reader:
+with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/pf_u") as reader:
     for inx, topic in enumerate(real_poses_topics):
         real_poses.append(file_interface.read_bag_trajectory(reader, topic))
         # tri_poses.append(file_interface.read_bag_trajectory(reader, tri_poses_topics[inx]))
         pf_u_poses.append(file_interface.read_bag_trajectory(reader, pf_poses_topics[inx]))
 
 
-with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/result_bags/{bag_name}/result_bag_1_0") as reader:
+# with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/results/result_bags/{bag_name}/result_bag_1_0") as reader:
+with Rosbag2Reader(f"/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/pf_uv") as reader:
     for inx, topic in enumerate(real_poses_topics):
         uv_real_poses.append(file_interface.read_bag_trajectory(reader, real_poses_topics[inx]))
         pf_uv_poses.append(file_interface.read_bag_trajectory(reader, pf_poses_topics[inx]))
