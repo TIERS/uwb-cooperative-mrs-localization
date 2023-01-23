@@ -153,9 +153,11 @@ script/errors/
 ```
 
 ### Single UWB range
+
 APE             |  Trajectory         
 :-------------------------:|:-------------------------: 
 ![](./demos/ape_single.png)  |  ![](./demos/single_traj.png)
+
 
 ### Multiple UWB ranges
 #### APE                 
