@@ -15,16 +15,12 @@ Add Eclipse Zenoh private repository to the sources list:
     Then either: \
      install the plugin with: `sudo apt install zenoh-plugin-dds`.\
      install the standalone executable with:  `sudo apt install zenoh-bridge-dds`.
-3. pfilter
-
-        pip install pfilter
-
-4. depthai_ros_msgs
+3. depthai_ros_msgs
 
         sudo apt install ros-foxy-depthai-ros-msgs
-5. Others
+4. Others
 
-        pip install numpy matplotlib
+        pip install numpy matplotlib pfilter
 
 
 <!-- ## Data
@@ -71,12 +67,11 @@ Topics can be seen as follows.
 ``` -->
 
 ## Run
-<!-- ### Positioning -->
-<!-- #### Run Once -->
+### Proposed Particle Filter Approach
 currently, if you only want to run one round of each filter.
 For multiple robots, 
 ```
-pf_ros2_multi_ulv.py --fuse_group 0 --with_model False 
+python3 pf_ros2_multi_ulv.py --fuse_group 0 --with_model False 
 ```
 Arguments meaning(currently not used):
 ```
@@ -103,6 +98,11 @@ The groudtruth and estimated relative pose will be in
 The errors will be in 
 ```
 ../errors/
+```
+
+### Triangulation
+```
+python3 tri_ros2_ul.py --with_model False
 ```
 <!-- #### Run In a Loop
 Run a script that can generate all the results of all rounds of different fusing group.
@@ -154,7 +154,7 @@ It will save the images in
 <!-- currently mainly run the code in 
 ```
 script/camera_opti.py
-``` --> -->
+``` --> 
 
 ## Results visualization
 currently mainly run the code in 
