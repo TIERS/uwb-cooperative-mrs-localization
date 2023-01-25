@@ -35,7 +35,7 @@ if not os.path.exists(fig_img_folder):
 if not os.path.exists(fig_tex_folder):
     os.makedirs(fig_tex_folder)
 # /vrpn_client_node/tb05/pose
-bag_name = "/home/xianjia/Workspace/temp/uwb_ranging_refine_with_spatial_detection/rosbag2_2023_01_16-17_38_17"
+bag_name = "/home/xianjia/nav/rosbag2_2023_01_25-11_55_10"
 # bag_name = "20221217/rosbag2_20_09_08/"
 real_poses_topics = "/vrpn_client_node/tb05/pose"
 # tri_poses_topics  = ["/tri_turtle01_pose", "/tri_turtle02_pose", "/tri_turtle03_pose", "/tri_turtle05_pose"]
@@ -46,7 +46,11 @@ with Rosbag2Reader(bag_name) as reader:
     # for inx, topic in enumerate(real_poses_topics):
     u_real_poses = file_interface.read_bag_trajectory(reader,real_poses_topics)
     # tri_poses.append(file_interface.read_bag_trajectory(reader, tri_poses_topics[inx]))
-    pf_u_poses = file_interface.read_bag_trajectory(reader,pf_poses_topics)
+    pf_u_poses = file_interface.read_bag_trajectory(reader,pf_poses_topics) 
+    print(pf_u_poses[0])
+    # x: 0.07643099129199982                                                                                                                                                                    
+    # y: 0.14884595572948456                                                                                                                                                                     
+    # z: 0.16803431510925293 
 
 traj_ref_u, traj_est_u = sync.associate_trajectories(u_real_poses, pf_u_poses, max_diff=0.05)
 traj_est_u.align(traj_ref_u, correct_scale=True, correct_only_scale=False)
