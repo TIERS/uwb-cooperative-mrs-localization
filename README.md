@@ -1,4 +1,4 @@
-# uwb_ranging_refine_with_spatial_detection
+# Loosely Coupled Odometry, UWB Ranging, and Cooperative Spatial Detection for Relative Monte-Carlo Multi-Robot Localization
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 ## Installation 
@@ -175,7 +175,6 @@ APE             |  Trajectory
 ![](./demos/multi_traj.png)
 
 
-<<<<<<< HEAD
 ### Single UWB range
 APE             |  Trajectory         
 :-------------------------:|:-------------------------: 
@@ -195,3 +194,7 @@ APE             |  Trajectory
 This research work is supported by the Academy of Finland’s AeroPolis project (Grant No. 348480), and by the R3Swarms project funded by the Secure Systems Research Center (SSRC), Technology Innovation Institute (TII).
 
 
+## To Do List
+- [ ] Change the results in Readme
+- [ ] Add the paper abstract and Arkiv link
+- [ ] A None ROS version
