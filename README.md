@@ -161,7 +161,21 @@ currently mainly run the code in
 ```
 script/errors/
 ```
+### Single UWB range
+APE             |  Trajectory         
+:-------------------------:|:-------------------------: 
+![](./demos/ape_single.png)  |  ![](./demos/single_traj.png)
 
+
+### Multiple UWB ranges
+#### APE                 
+![](./demos/ape_multi.png)  
+
+#### Trajectories
+![](./demos/multi_traj.png)
+
+
+<<<<<<< HEAD
 ### Single UWB range
 APE             |  Trajectory         
 :-------------------------:|:-------------------------: 
@@ -179,4 +193,5 @@ APE             |  Trajectory
 
 ## Acknowledgement
 This research work is supported by the Academy of Finland’s AeroPolis project (Grant No. 348480), and by the R3Swarms project funded by the Secure Systems Research Center (SSRC), Technology Innovation Institute (TII).
+
 
