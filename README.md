@@ -2,8 +2,9 @@
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 ## Installation 
-1. ros2 galactic \
+1. ROS 2 galactic \
 Install ros2 galactic following the instruction [here](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
+
 2. Eclipse Zenoh \
 Add Eclipse Zenoh private repository to the sources list:
 
