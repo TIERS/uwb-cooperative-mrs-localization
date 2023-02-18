@@ -1,7 +1,18 @@
 # Loosely Coupled Odometry, UWB Ranging, and Cooperative Spatial Detection for Relative Monte-Carlo Multi-Robot Localization
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
+If you find the code or data in this repository useful in your research, [the related paper is available in our website](https://tiers.utu.fi/paper/xianjia2023loosely):
+  ```
+  @article{xianjia2023loosely, 
+      title="Loosely Coupled Odometry, {UWB} Ranging, and Cooperative Spatial Detection for Relative Monte-Carlo Multi-Robot Localization", 
+      author="Xianjia Yu and  Paola Torrico Mor\'on and  Sahar Salimpour and Jorge {Pe\~na Queralta} and Tomi Westerlund", 
+      journal="arXiv", 
+      year="2023"
+  }
+  ```
+
 ## Installation 
+
 1. ROS 2 galactic \
 Install ros2 galactic following the instruction [here](https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html)
 
@@ -67,9 +78,13 @@ Topics can be seen as follows.
 /vrpn_client_node/turtlebot5_cap/pose
 ``` -->
 
-## Run
+## How to run
+
+Please see below for instructions on running the proposed algorithms with predefined data.
+
 ### Proposed Particle Filter Approach
-currently, if you only want to run one round of each filter.
+
+Currently, if you only want to run one round of each filter.
 For multiple robots, 
 ```
 python3 pf_ros2_multi_ulv.py --fuse_group 0 --with_model False 
