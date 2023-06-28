@@ -1,4 +1,5 @@
-# Loosely Coupled Odometry, UWB Ranging, and Cooperative Spatial Detection for Relative Monte-Carlo Multi-Robot Localization
+# Fusing Odometry, UWB Ranging, and Spatial Detections for Relative Multi-Robot Localization
+
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
 If you find the code or data in this repository useful in your research, [the related paper is available in our website](https://tiers.utu.fi/paper/xianjia2023loosely):
