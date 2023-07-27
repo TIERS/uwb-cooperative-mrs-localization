@@ -7,14 +7,16 @@ from pfilter import ParticleFilter, squared_error, gaussian_noise
 
 from tensorflow import keras
 
+import matplotlib.pyplot as plt
+
 class UWBParticleFilter():
     def __init__(self, spatial_enable = False, lstm_enable = False, identical_thresh = 0.1, robot_ids = [0,1,2]):
         self.init_roi = (-8, 8)
-        self.num_particles = 50
-        self.num_states = 2*len(robot_ids)
+        self.num_particles = 100
+        self.num_states = 2*(len(robot_ids) -1)
         self.esti_noise = 0.05
         self.weights_sigma = 1.2
-        self.resample_proportion = 0.01
+        self.resample_proportion = 0.1
         self.pf_init_flag = False
         self.data_ready_flag = False
         self.first_iter_flag = True
@@ -23,6 +25,8 @@ class UWBParticleFilter():
         self.lstm_enable = lstm_enable
         self.identical_thresh = identical_thresh
         self.robot_ids = robot_ids
+
+        self.counter = 0
 
         self.robot_poses = []
         self.odom_trans = []
@@ -55,8 +59,6 @@ class UWBParticleFilter():
         self.pf.init_filter()
         self.pf_init_flag = True
 
-
-
     '''
         Update particles' states with odometry data
     '''
@@ -73,7 +75,15 @@ class UWBParticleFilter():
         update the hypothesis based on the particle filter states
     '''
     def calc_hypothesis(self, x) :
-        hypo = np.linalg.norm(np.array([x[:,0:2]]), axis=2)
+        print(f"particles shape: {x.shape}")
+        tmp = []
+        for p in self.uwb_dict:
+            if p[0] == 0:
+                tmp.append(x[:,2*p[1]:2*p[1]+2])
+            else:
+                tmp.append(x[:,2*p[1]:2*p[1]+2] - x[:,2*p[0]:2*p[0]+2])
+        print('inside cal hypo')
+        hypo = np.linalg.norm(tmp, axis=2)
         if self.spatial_enable:
             for key in self.cooperative_spatial_dict:
                 sp0 = self.cooperative_spatial_dict[key] - x[:,0:2]
@@ -81,6 +91,7 @@ class UWBParticleFilter():
                 rp = sp1 - sp0
                 hypo.append(rp[:,0])
                 hypo.append(rp[:,1])
+        print(f"hypo: {hypo.shape}")
         return np.transpose(hypo) 
 
     '''
@@ -94,15 +105,22 @@ class UWBParticleFilter():
         Update the particle filters based on the odometry data movement info
     '''    
     def updata_particle_odom(self):
-        self.odom_trans = list(chain.from_iterable([[val[0],val[1]] for val in self.odom_data]))
+        # set the the first robot as the origin
+        origin = (self.odom_data[self.robot_ids[0]][0], self.odom_data[self.robot_ids[0]][1])
+        self.odom_trans = list(chain.from_iterable([[val[0] - origin[0],val[1] - origin[1]] for val in self.odom_data.values()]))
+        self.odom_trans =  self.odom_trans[2:]
+        # print(len(self.odom_trans))
         if not self.odom_trans_prev:
             self.odom_trans_prev = self.odom_trans
         self.particle_odom = [x - y for x, y in zip(self.odom_trans, self.odom_trans_prev)]
+        print(f"particle_odom: {self.particle_odom}")
         self.odom_data_prev = self.odom_trans
 
     def update_robots_poses(self):
-        for id in self.robot_ids:
-            self.robot_poses.append([self.pf.mean_state[2*id], self.pf.mean_state[2*id+1]])
+        # for id in self.robot_ids:
+        #     self.robot_poses.append([self.pf.mean_state[2*id], self.pf.mean_state[2*id+1]])
+        print(self.pf.mean_state)
+        self.robot_poses.append(self.pf.mean_state)
 
     def update_input(self, uwb_data, odom_data):
         self.uwb_dict = uwb_data
@@ -168,6 +186,41 @@ class UWBParticleFilter():
 
     def get_robot_poses(self):
         return self.robot_poses
+    
+
+    def plot_particles(self):
+        """Plot a 1D tracking result as a line graph with overlaid
+        scatterplot of particles. Particles are sized according to
+        normalised weight at each step.
+            x: time values
+            y: original (uncorrupted) values
+            yn: noisy (observed) values
+            states: dictionary return from apply_pfilter        
+        """
+
+        plt.ioff()
+        plt.clf()
+        print(">>>>>> saving figures")
+        symbols = ['x', 'o', '*', '-',"v"]
+        symbol_colors =['black', 'darkgray', 'lightgray', 'red', 'green']
+        legends = [["T0_G", "T0_Mean", "T0_Map", "T0_Particles"],
+                   ["T1_G", "T1_Mean", "T1_Map", "T1_Particles"],
+                   ["T2_G", "T2_Mean", "T2_Map", "T2_Particles"],
+                   ["T3_G", "T3_Mean", "T3_Map", "T3_Particles"],
+                   ["T4_G", "T4_Mean", "T4_Map", "T4_Particles"]]
+        for i in range(len(self.robot_ids)):
+            print(i)
+            # plt.plot(self.true_relative_poses[i][0], self.true_relative_poses[i][1], symbols[i], c='red', label=legends[i][0])
+            plt.plot(self.pf.mean_state[2*i], self.pf.mean_state[2*i+1], symbols[i], c='green', label=legends[i][1])
+            plt.plot(self.pf.map_state[2*i], self.pf.map_state[2*i+1], symbols[i], c='orange', label=legends[i][2])
+            plt.scatter(self.pf.transformed_particles[:,2*i], self.pf.transformed_particles[:,2*i+1], color=symbol_colors[i], label=legends[i][3]) # lightgray
+        print(f"particles shape:{self.pf.transformed_particles.shape}")
+        plt.xlim(-9,9)
+        plt.ylim(-9,9)
+
+        plt.legend()
+        self.counter += 1
+        plt.savefig("/home/xianjia/imgs/test{}.png".format(self.counter))
 
     '''
         Update the particle filter
@@ -178,73 +231,52 @@ class UWBParticleFilter():
             
         if self.pf_filter_init:
             self.updata_particle_odom()
+            print(">>>> updated odometry")
             if self.lstm_enable:
                 self.set_lstm_input()
             if not self.first_iter_flag and self.spatial_enable: 
                 self.detection_iterate(self.robot_ids, self.spatial_dict)
             self.set_observation()
-            self.pf.update(observed=self.observation)
+            print(f">>>> set observation: {len(self.observation)}")
+            self.pf.update(observed=np.array(self.observation))
             self.update_robots_poses()
             self.first_iter_flag = False
 
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import ast
-import csv
+# if __name__ == "__main__":
+#     # TODO0: save the aligned trajctories to a csv file and copy it back to the original data csv file 
+#     # TODO1: read the csv file and loop the data to update the particle filter; 
+#         # TODO1.1).only uwb and odometry data
+#         # TODO1.2).uwb, odometry and lstm corrected ranges <not working yet, should be a quick check>
+#         # TODO1.3).uwb, odometry, lstm corrected ranges and spatial detections <not working yet, should be a quick check>
+#     # TODO2: save the results to a csv file
+#     # TODO3: plot the results and save it into a .tex file
 
-# Function to parse the list from a string representation
-def parse_list(cell_value):
-    return ast.literal_eval(cell_value)
+#     # Loop the data to update the particle filter
+#     # The data should be in a format of dictionary: 
+#     #       uwb distance (uwb and robot share the same index): [(robot_i, robot_j), distance]
+#     #       odometry data: [[x0,y0,x1,y1,x2,y2]
+#     #       spatial detections: [robot_i, detections]
 
-all_topics = [
-    '/uwb/tof/n_4/n_1/distance', '/uwb/tof/n_4/n_2/distance', '/uwb/tof/n_4/n_3/distance',
-    '/uwb/tof/n_4/n_5/distance', '/uwb/tof/n_1/n_2/distance', '/uwb/tof/n_1/n_3/distance',
-    '/uwb/tof/n_1/n_5/distance', '/uwb/tof/n_2/n_3/distance', '/uwb/tof/n_2/n_5/distance',
-    '/uwb/tof/n_3/n_5/distance', '/vrpn_client_node/tb01/pose', '/vrpn_client_node/tb02/pose',
-    '/vrpn_client_node/tb03/pose', '/vrpn_client_node/tb05/pose', '/turtle01/odom',
-    '/turtle02/odom', '/turtle03/odom', '/turtle05/odom'
-]
-
-# topics needs to be aligned:
-l = {'/turtle01/odom': parse_list, '/turtle02/odom': parse_list, '/turtle03/odom': parse_list, '/turtle05/odom': parse_list,
-     '/vrpn_client_node/tb01/pose': parse_list, '/vrpn_client_node/tb02/pose': parse_list, '/vrpn_client_node/tb03/pose': parse_list,'/vrpn_client_node/tb05/pose': parse_list}
-
-if __name__ == "__main__":
-    # TODO0: save the aligned trajctories to a csv file and copy it back to the original data csv file 
-    # TODO1: read the csv file and loop the data to update the particle filter; 
-        # TODO1.1).only uwb and odometry data
-        # TODO1.2).uwb, odometry and lstm corrected ranges <not working yet, should be a quick check>
-        # TODO1.3).uwb, odometry, lstm corrected ranges and spatial detections <not working yet, should be a quick check>
-    # TODO2: save the results to a csv file
-    # TODO3: plot the results and save it into a .tex file
-
-    # Loop the data to update the particle filter
-    # The data should be in a format of dictionary: 
-    #       uwb distance (uwb and robot share the same index): [(robot_i, robot_j), distance]
-    #       odometry data: [[x0,y0,x1,y1,x2,y2]
-    #       spatial detections: [robot_i, detections]
-
-    # define the data variables,fake data to test
-    robot_ids = [0,1,2,3,4]
-    uwb_pairs = [(0,1), (0,2), (0,3), (0,4), (1,2), (1,3), (1,4), (2,3), (2,4), (3,4)]
-    uwb_ranges_dict = {pair:np.array([0.1, 0.2]) for pair in uwb_pairs}
-    odom_data = [np.array([0.1, 0.1, 0.1]), np.array([0.2,0.2,0.2]), np.array([0.4,0.4,0.4])]
-    spatial_dict = {0:[np.array([1,2]), np.array([3,4])], 1:[np.array([2,3]), np.array([4,5])], 2:[np.array([3,4]), np.array([5,6])]}
+#     # define the data variables,fake data to test
+#     robot_ids = [0,1,2,3,4]
+#     uwb_pairs = [(0,1), (0,2), (0,3), (0,4), (1,2), (1,3), (1,4), (2,3), (2,4), (3,4)]
+#     uwb_ranges_dict = {pair:np.array([0.1, 0.2]) for pair in uwb_pairs}
+#     odom_data = [np.array([0.1, 0.1, 0.1]), np.array([0.2,0.2,0.2]), np.array([0.4,0.4,0.4])]
+#     spatial_dict = {0:[np.array([1,2]), np.array([3,4])], 1:[np.array([2,3]), np.array([4,5])], 2:[np.array([3,4]), np.array([5,6])]}
     
-    # read data
-    data = pd.read_csv('data.csv', converters=l).to_numpy()
-    print(data.shape)
+#     # read data
+#     data = pd.read_csv('data.csv', converters=l).to_numpy()
+#     print(data.shape)
 
 
-    # intialize the particle filter
-    uwb_pf = UWBParticleFilter(spatial_enable=False, lstm_enable=False, robot_ids = [0,1,2])  
-    # models_path = {0: 'models/robot0.h5', 1: 'models/robot1.h5', 2: 'models/robot2.h5'}
-    # uwb_pf.set_lstm_models(models_path) 
+#     # intialize the particle filter
+#     uwb_pf = UWBParticleFilter(spatial_enable=False, lstm_enable=False, robot_ids = [0,1,2])  
+#     # models_path = {0: 'models/robot0.h5', 1: 'models/robot1.h5', 2: 'models/robot2.h5'}
+#     # uwb_pf.set_lstm_models(models_path) 
 
-    for i in range(10):
-        uwb_pf.update_input(uwb_ranges_dict, odom_data, spatial_dict)
-        uwb_pf.update_filter()
-        print(uwb_pf.get_robot_poses())
+#     for i in range(10):
+#         uwb_pf.update_input(uwb_ranges_dict, odom_data, spatial_dict)
+#         uwb_pf.update_filter()
+#         print(uwb_pf.get_robot_poses())
 

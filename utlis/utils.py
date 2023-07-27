@@ -53,3 +53,11 @@ def cal_yaws(array):
     r = R.from_quat(array)
     yaw, _, _ = r.as_euler('zxy', degrees=False)
     return yaw
+
+
+def dict_values_empty(dict):
+    return all(ele.size > 0 for ele in dict.values())
+
+
+def dicts_empty(dicts):
+    return all(dict_values_empty(dict) for dict in dicts)
