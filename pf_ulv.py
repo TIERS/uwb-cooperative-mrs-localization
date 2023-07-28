@@ -13,7 +13,7 @@ class UWBParticleFilter():
     def __init__(self, spatial_enable = False, lstm_enable = False, identical_thresh = 0.1, robot_ids = [0,1,2]):
         self.init_roi = (-8, 8)
         self.num_particles = 100
-        self.num_states = 2*(len(robot_ids) -1)
+        self.num_states = len(robot_ids) * 2
         self.esti_noise = 0.05
         self.weights_sigma = 1.2
         self.resample_proportion = 0.1
@@ -31,6 +31,9 @@ class UWBParticleFilter():
         self.robot_poses = []
         self.odom_trans = []
         self.odom_trans_prev = []
+
+        self.odom_save = []
+
         if self.spatial_enable:
             self.cooperative_spatial_dict = {}
 
@@ -44,7 +47,7 @@ class UWBParticleFilter():
     '''
     def pf_filter_init(self):
 
-        self.prior_fn = lambda n:np.random.uniform(self.init_roi[0],self.init_roi[1], (n,self.num_states))
+        self.prior_fn = lambda n:np.random.uniform(self.init_roi[0],self.init_roi[1], (n, self.num_states))
 
         self.pf = ParticleFilter(
             prior_fn =              self.prior_fn, 
@@ -75,15 +78,12 @@ class UWBParticleFilter():
         update the hypothesis based on the particle filter states
     '''
     def calc_hypothesis(self, x) :
-        print(f"particles shape: {x.shape}")
+        # print(f"particles shape: {x.shape}")
         tmp = []
         for p in self.uwb_dict:
-            if p[0] == 0:
-                tmp.append(x[:,2*p[1]:2*p[1]+2])
-            else:
-                tmp.append(x[:,2*p[1]:2*p[1]+2] - x[:,2*p[0]:2*p[0]+2])
-        print('inside cal hypo')
+            tmp.append(x[:,2*p[1]:2*p[1]+2] - x[:,2*p[0]:2*p[0]+2])
         hypo = np.linalg.norm(tmp, axis=2)
+        print(hypo)
         if self.spatial_enable:
             for key in self.cooperative_spatial_dict:
                 sp0 = self.cooperative_spatial_dict[key] - x[:,0:2]
@@ -91,7 +91,7 @@ class UWBParticleFilter():
                 rp = sp1 - sp0
                 hypo.append(rp[:,0])
                 hypo.append(rp[:,1])
-        print(f"hypo: {hypo.shape}")
+        # print(f"hypo: {hypo.shape}")
         return np.transpose(hypo) 
 
     '''
@@ -108,12 +108,13 @@ class UWBParticleFilter():
         # set the the first robot as the origin
         origin = (self.odom_data[self.robot_ids[0]][0], self.odom_data[self.robot_ids[0]][1])
         self.odom_trans = list(chain.from_iterable([[val[0] - origin[0],val[1] - origin[1]] for val in self.odom_data.values()]))
-        self.odom_trans =  self.odom_trans[2:]
+        self.odom_save.append(self.odom_trans)
+        # self.odom_trans =  self.odom_trans[2:]
         # print(len(self.odom_trans))
         if not self.odom_trans_prev:
             self.odom_trans_prev = self.odom_trans
         self.particle_odom = [x - y for x, y in zip(self.odom_trans, self.odom_trans_prev)]
-        print(f"particle_odom: {self.particle_odom}")
+        # print(f"particle_odom: {self.particle_odom}")
         self.odom_data_prev = self.odom_trans
 
     def update_robots_poses(self):
@@ -173,16 +174,17 @@ class UWBParticleFilter():
                 self.uwb_dict[key] = uwb_prev - bia[0]
 
     def set_observation(self):
-        self.observation = [] 
+        observation = [] 
         for key in self.uwb_dict:
-            self.observation.append(self.uwb_dict[key])
+            observation.append(self.uwb_dict[key])
         if self.spatial_enable:
             for key in self.cooperative_spatial_dict:
                 sp0 = self.cooperative_spatial_dict[key] - self.robot_poses[key[0]]
                 sp1 = self.cooperative_spatial_dict[key] - self.robot_poses[key[1]]
                 rp = sp1 - sp0
-                self.observation.append(rp[0])
-                self.observation.append(rp[1])
+                observation.append(rp[0])
+                observation.append(rp[1])
+        return observation
 
     def get_robot_poses(self):
         return self.robot_poses
@@ -236,9 +238,10 @@ class UWBParticleFilter():
                 self.set_lstm_input()
             if not self.first_iter_flag and self.spatial_enable: 
                 self.detection_iterate(self.robot_ids, self.spatial_dict)
-            self.set_observation()
-            print(f">>>> set observation: {len(self.observation)}")
-            self.pf.update(observed=np.array(self.observation))
+            observation = self.set_observation()
+            print(f">>>> set observation: {np.vstack(np.array(observation)).shape}")
+            self.pf.update(observed=observation)
+            print(">>>> updated filter")
             self.update_robots_poses()
             self.first_iter_flag = False
 
