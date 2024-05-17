@@ -2,11 +2,11 @@
 
 This repo contains code for refine the Ultral-Wideband ranging with the detected spatial information of an object seen by multiple robots at the same time.
 
-If you find the code or data in this repository useful in your research, [the related paper is available in our website](https://tiers.utu.fi/paper/xianjia2023loosely):
+If you find the code or data in this repository useful in your research, [the related paper is available in arXiv](https://arxiv.org/abs/2304.06264):
   ```
   @article{xianjia2023loosely, 
       title="Loosely Coupled Odometry, {UWB} Ranging, and Cooperative Spatial Detection for Relative Monte-Carlo Multi-Robot Localization", 
-      author="Xianjia Yu and  Paola Torrico Mor\'on and  Sahar Salimpour and Jorge {Pe\~na Queralta} and Tomi Westerlund", 
+      author="Xianjia Yu and  Iacopo Catalano and Paola {Torrico Mor\'on} and  Sahar Salimpour and Tomi Westerlund and Jorge {Pe\~na Queralta}", 
       journal="arXiv", 
       year="2023"
   }
